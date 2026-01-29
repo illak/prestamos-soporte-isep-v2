@@ -152,30 +152,38 @@ export default function UsuariosPage() {
       key: 'apellido',
       label: 'Apellido',
       sortable: true,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
       key: 'nombre',
       label: 'Nombre',
       sortable: true,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
       key: 'dni',
       label: 'DNI',
       sortable: true,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
       key: 'mail',
       label: 'Email',
       render: (value) => (
-        <span className="text-gray-600 truncate max-w-xs block" title={value}>
+        <a
+          href={`mailto:${value}`}
+          className="text-blue-600 dark:text-blue-400 hover:underline truncate max-w-xs block"
+          title={value}
+        >
           {value}
-        </span>
+        </a>
       ),
     },
     {
       key: 'area_equipo',
       label: 'Área',
       sortable: true,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
       key: 'rol',
@@ -186,7 +194,7 @@ export default function UsuariosPage() {
       key: 'activo',
       label: 'Estado',
       render: (value) => (
-        <span className={`badge ${value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+        <span className={`badge ${value ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
           {value ? 'Activo' : 'Inactivo'}
         </span>
       ),
@@ -198,21 +206,21 @@ export default function UsuariosPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleEdit(row)}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
           >
             Editar
           </button>
           {row.activo ? (
             <button
               onClick={() => handleDelete(row)}
-              className="text-red-600 hover:text-red-800 text-sm font-medium"
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
             >
               Desactivar
             </button>
           ) : (
             <button
               onClick={() => handleRestore(row)}
-              className="text-green-600 hover:text-green-800 text-sm font-medium"
+              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 text-sm font-medium"
             >
               Restaurar
             </button>
@@ -226,24 +234,24 @@ export default function UsuariosPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
-        <p className="text-gray-600 mt-1">Gestión de usuarios del instituto</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de usuarios del instituto</p>
       </div>
 
       {/* Actions bar */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             <SearchInput
               value={filters.busqueda}
               onChange={handleSearch}
-              placeholder="Buscar por nombre, apellido, DNI o email..."
-              className="sm:w-80"
+              placeholder="Buscar por nombre, apellido, DNI"
+              className="sm:w-72"
             />
             <select
               value={filters.activo}
               onChange={(e) => handleFilterChange('activo', e.target.value)}
-              className="input sm:w-40"
+              className="input filter-select"
             >
               <option value="1">Activos</option>
               <option value="0">Inactivos</option>
@@ -252,7 +260,7 @@ export default function UsuariosPage() {
             <select
               value={filters.area}
               onChange={(e) => handleFilterChange('area', e.target.value)}
-              className="input sm:w-48"
+              className="input filter-select"
             >
               <option value="">Todas las áreas</option>
               {areas.map((area) => (
@@ -262,14 +270,14 @@ export default function UsuariosPage() {
             <select
               value={filters.rol}
               onChange={(e) => handleFilterChange('rol', e.target.value)}
-              className="input sm:w-40"
+              className="input filter-select"
             >
               <option value="todos">Todos los roles</option>
               <option value="usuario">Usuario</option>
               <option value="soporte_it">Soporte IT</option>
             </select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => fetchUsuarios()}
               className="btn btn-outline"
@@ -281,29 +289,29 @@ export default function UsuariosPage() {
               onClick={() => setShowImport(true)}
               className="btn btn-outline"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Importar</span>
             </button>
             <button
               onClick={handleExport}
               className="btn btn-outline"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Exportar</span>
             </button>
             <button
               onClick={() => setShowForm(true)}
               className="btn btn-primary"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Usuario
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nuevo Usuario</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <Table
           columns={columns}
           data={usuarios}

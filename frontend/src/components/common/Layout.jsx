@@ -170,11 +170,13 @@ export default function Layout({ children }) {
                 )}
               </button>
               {/* Logo del instituto */}
-              <img
-                src="https://isep-cba.edu.ar/web/wp-content/uploads/2017/08/Isologo_ISEP_Encabezado.png"
-                alt="ISEP - Instituto Superior de Estudios Pedagógicos"
-                className="h-10 hidden sm:block"
-              />
+              <div className="hidden sm:block dark:bg-white/90 dark:rounded-lg dark:px-2 dark:py-1">
+                <img
+                  src="https://isep-cba.edu.ar/web/wp-content/uploads/2017/08/Isologo_ISEP_Encabezado.png"
+                  alt="ISEP - Instituto Superior de Estudios Pedagógicos"
+                  className="h-10"
+                />
+              </div>
             </div>
           </div>
         </header>

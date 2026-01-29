@@ -161,6 +161,7 @@ export default function InsumosPage() {
       key: 'tipologia',
       label: 'Tipología',
       sortable: true,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
       key: 'nombre',
@@ -168,9 +169,9 @@ export default function InsumosPage() {
       sortable: true,
       render: (value, row) => (
         <div>
-          <span className="font-medium">{value}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{value}</span>
           {row.numero_serie && (
-            <span className="block text-xs text-gray-500">S/N: {row.numero_serie}</span>
+            <span className="block text-xs text-gray-500 dark:text-gray-400">S/N: {row.numero_serie}</span>
           )}
         </div>
       ),
@@ -179,7 +180,7 @@ export default function InsumosPage() {
       key: 'descripcion',
       label: 'Descripción',
       render: (value) => (
-        <span className="text-gray-600 truncate max-w-xs block" title={value}>
+        <span className="text-gray-600 dark:text-gray-300 truncate max-w-xs block" title={value}>
           {value || '-'}
         </span>
       ),
@@ -194,7 +195,7 @@ export default function InsumosPage() {
           {row.prestamo_activo && (
             <div className="text-xs">
               <EstadoPrestamoBadge diasTranscurridos={row.prestamo_activo.dias_transcurridos} />
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
                 {row.prestamo_activo.usuario_nombre}
               </p>
             </div>
@@ -229,14 +230,14 @@ export default function InsumosPage() {
           )}
           <button
             onClick={() => setHistorialInsumo(row)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             title="Ver historial"
           >
             <History className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleEdit(row)}
-            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
             title="Editar"
           >
             <Edit className="w-4 h-4" />
@@ -250,12 +251,12 @@ export default function InsumosPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Insumos</h1>
-        <p className="text-gray-600 mt-1">Gestión de equipos e insumos informáticos</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Insumos</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de equipos e insumos informáticos</p>
       </div>
 
       {/* Actions bar */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             <SearchInput
@@ -323,15 +324,15 @@ export default function InsumosPage() {
         {estados.map((estado) => {
           const count = insumos.filter(i => i.estado === estado).length;
           const colors = {
-            'Disponible': 'bg-green-50 text-green-700 border-green-200',
-            'En préstamo': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-            'En mantenimiento': 'bg-orange-50 text-orange-700 border-orange-200',
-            'Dado de baja': 'bg-red-50 text-red-700 border-red-200',
+            'Disponible': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+            'En préstamo': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+            'En mantenimiento': 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+            'Dado de baja': 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
           };
           return (
             <div
               key={estado}
-              className={`border rounded-lg p-3 ${colors[estado] || 'bg-gray-50'} cursor-pointer hover:shadow-md transition-shadow`}
+              className={`border rounded-lg p-3 ${colors[estado] || 'bg-gray-50 dark:bg-gray-800'} cursor-pointer hover:shadow-md transition-shadow`}
               onClick={() => handleFilterChange('estado', filters.estado === estado ? '' : estado)}
             >
               <p className="text-2xl font-bold">{count}</p>
@@ -342,7 +343,7 @@ export default function InsumosPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <Table
           columns={columns}
           data={insumos}

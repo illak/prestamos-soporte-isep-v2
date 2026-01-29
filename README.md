@@ -7,12 +7,20 @@ Sistema web para gestionar préstamos de equipos informáticos (notebooks, perif
 ## Características Principales
 
 - **Gestión de Usuarios**: CRUD completo con roles (usuario y soporte_it)
+  - Selector de área/equipo con opciones desde la base de datos
+  - Posibilidad de agregar nuevas áreas personalizadas
 - **Gestión de Insumos**: Inventario de equipos con estados (Disponible, En préstamo, En mantenimiento, Dado de baja)
+  - Estadísticas por estado con filtros rápidos
+  - Historial de préstamos por equipo
 - **Sistema de Préstamos**:
   - Flujos rápidos de préstamo/devolución desde listado de insumos (2 clics)
   - Alertas visuales por días transcurridos sin devolución
   - Selector de responsable IT
-- **Dashboard**: Métricas, gráficos y estadísticas en tiempo real
+- **Dashboard Simplificado**:
+  - 3 métricas principales: Activos hoy, Pendientes de devolución, Insumos disponibles
+  - 6 gráficos: Préstamos por día (tipología), Préstamos por día (área), Distribución por tipología, Insumos más prestados, Usuarios con más préstamos activos, Préstamos más antiguos
+- **Tema Oscuro/Claro**: Toggle de tema con preferencia guardada en localStorage (oscuro por defecto)
+- **Branding ISEP**: Logo del instituto en el encabezado
 - **Importación/Exportación CSV** para usuarios e insumos
 - **Dockerizado**: Despliegue con un solo comando
 
@@ -163,7 +171,9 @@ Los préstamos activos muestran alertas visuales según los días transcurridos:
 - `POST /api/usuarios` - Crear
 - `PUT /api/usuarios/:id` - Actualizar
 - `DELETE /api/usuarios/:id` - Desactivar (soft delete)
+- `PUT /api/usuarios/:id/restore` - Restaurar usuario desactivado
 - `GET /api/usuarios/soporte-it` - Listar solo soporte IT
+- `GET /api/usuarios/areas` - Listar áreas/equipos únicos
 - `POST /api/usuarios/import` - Importar CSV
 - `GET /api/usuarios/export` - Exportar CSV
 
@@ -174,6 +184,8 @@ Los préstamos activos muestran alertas visuales según los días transcurridos:
 - `DELETE /api/insumos/:id` - Eliminar
 - `GET /api/insumos/:id/historial` - Historial de préstamos
 - `GET /api/insumos/:id/prestamo-activo` - Préstamo activo actual
+- `GET /api/insumos/tipologias` - Listar tipologías únicas
+- `GET /api/insumos/estados` - Listar estados posibles
 - `POST /api/insumos/import` - Importar CSV
 - `GET /api/insumos/export` - Exportar CSV
 
@@ -185,8 +197,9 @@ Los préstamos activos muestran alertas visuales según los días transcurridos:
 - `GET /api/prestamos/export` - Exportar CSV
 
 ### Dashboard
-- `GET /api/dashboard/metricas` - Métricas principales
-- `GET /api/dashboard/graficos` - Datos para gráficos
+- `GET /api/dashboard/metricas` - Métricas principales (activos hoy, pendientes, desglose por días)
+- `GET /api/dashboard/graficos` - Datos para gráficos (préstamos por día/tipo/área, distribución, usuarios pendientes)
+- `GET /api/dashboard/prestamos-criticos` - Préstamos con 4+ días sin devolver
 - `GET /api/dashboard/prestamos-antiguos` - Top préstamos más antiguos
 
 ## Capturas de Pantalla
