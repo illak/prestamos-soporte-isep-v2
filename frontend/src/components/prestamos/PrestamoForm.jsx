@@ -142,16 +142,16 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
               <p className="text-red-500 text-sm mt-1">{errors.insumo_id.message}</p>
             )}
             {filteredInsumos.length === 0 && !loadingOptions && (
-              <p className="text-yellow-600 text-sm mt-1">No hay insumos disponibles</p>
+              <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">No hay insumos disponibles</p>
             )}
           </div>
         )}
 
         {/* Info del insumo si está editando */}
         {isEditing && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Insumo</p>
-            <p className="font-medium">{prestamo.insumo_descripcion}</p>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Insumo</p>
+            <p className="font-medium text-gray-900 dark:text-white">{prestamo.insumo_descripcion}</p>
           </div>
         )}
 
@@ -186,9 +186,9 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
 
         {/* Info del usuario si está editando */}
         {isEditing && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-500">Usuario</p>
-            <p className="font-medium">{prestamo.usuario_nombre_completo}</p>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Usuario</p>
+            <p className="font-medium text-gray-900 dark:text-white">{prestamo.usuario_nombre_completo}</p>
           </div>
         )}
 
@@ -240,7 +240,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}

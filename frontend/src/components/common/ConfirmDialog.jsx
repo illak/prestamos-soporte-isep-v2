@@ -30,7 +30,7 @@ export default function ConfirmDialog({
         <div className="mx-auto flex items-center justify-center mb-4">
           {icons[type]}
         </div>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
         <div className="flex justify-center gap-3">
           <button
             type="button"

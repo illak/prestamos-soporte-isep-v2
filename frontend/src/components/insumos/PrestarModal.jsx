@@ -85,13 +85,13 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar Préstamo" size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Insumo (pre-cargado y no editable) */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-blue-600" />
+            <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <div>
-              <p className="font-medium text-blue-900">{insumo.tipologia} - {insumo.nombre}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">{insumo.tipologia} - {insumo.nombre}</p>
               {insumo.numero_serie && (
-                <p className="text-sm text-blue-700">S/N: {insumo.numero_serie}</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">S/N: {insumo.numero_serie}</p>
               )}
             </div>
           </div>
@@ -126,10 +126,10 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
             <p className="text-red-500 text-sm mt-1">{errors.usuario_id.message}</p>
           )}
           {selectedUsuario && (
-            <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-              <p className="font-medium">{selectedUsuario.nombre} {selectedUsuario.apellido}</p>
-              <p className="text-gray-600">{selectedUsuario.mail}</p>
-              <p className="text-gray-600">Área: {selectedUsuario.area_equipo}</p>
+            <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+              <p className="font-medium text-gray-900 dark:text-white">{selectedUsuario.nombre} {selectedUsuario.apellido}</p>
+              <p className="text-gray-600 dark:text-gray-300">{selectedUsuario.mail}</p>
+              <p className="text-gray-600 dark:text-gray-300">Área: {selectedUsuario.area_equipo}</p>
             </div>
           )}
         </div>
@@ -171,7 +171,7 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
             maxDate={new Date()}
             className="input w-full"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Por defecto: ahora. Puede modificarse para correcciones.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
