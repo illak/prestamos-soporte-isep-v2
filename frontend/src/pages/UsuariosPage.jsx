@@ -239,44 +239,15 @@ export default function UsuariosPage() {
       </div>
 
       {/* Actions bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-            <SearchInput
-              value={filters.busqueda}
-              onChange={handleSearch}
-              placeholder="Buscar por nombre, apellido, DNI"
-              className="sm:w-72"
-            />
-            <select
-              value={filters.activo}
-              onChange={(e) => handleFilterChange('activo', e.target.value)}
-              className="input filter-select"
-            >
-              <option value="1">Activos</option>
-              <option value="0">Inactivos</option>
-              <option value="todos">Todos</option>
-            </select>
-            <select
-              value={filters.area}
-              onChange={(e) => handleFilterChange('area', e.target.value)}
-              className="input filter-select"
-            >
-              <option value="">Todas las áreas</option>
-              {areas.map((area) => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
-            <select
-              value={filters.rol}
-              onChange={(e) => handleFilterChange('rol', e.target.value)}
-              className="input filter-select"
-            >
-              <option value="todos">Todos los roles</option>
-              <option value="usuario">Usuario</option>
-              <option value="soporte_it">Soporte IT</option>
-            </select>
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6 space-y-4">
+        {/* Primera fila: Buscador y botones de acción */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <SearchInput
+            value={filters.busqueda}
+            onChange={handleSearch}
+            placeholder="Buscar por nombre, apellido, DNI..."
+            className="w-full sm:max-w-md"
+          />
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => fetchUsuarios()}
@@ -307,6 +278,38 @@ export default function UsuariosPage() {
               <span className="hidden sm:inline">Nuevo Usuario</span>
             </button>
           </div>
+        </div>
+
+        {/* Segunda fila: Filtros */}
+        <div className="flex flex-wrap gap-3">
+          <select
+            value={filters.activo}
+            onChange={(e) => handleFilterChange('activo', e.target.value)}
+            className="input w-auto"
+          >
+            <option value="1">Activos</option>
+            <option value="0">Inactivos</option>
+            <option value="todos">Todos</option>
+          </select>
+          <select
+            value={filters.area}
+            onChange={(e) => handleFilterChange('area', e.target.value)}
+            className="input w-auto min-w-[160px]"
+          >
+            <option value="">Todas las áreas</option>
+            {areas.map((area) => (
+              <option key={area} value={area}>{area}</option>
+            ))}
+          </select>
+          <select
+            value={filters.rol}
+            onChange={(e) => handleFilterChange('rol', e.target.value)}
+            className="input w-auto"
+          >
+            <option value="todos">Todos los roles</option>
+            <option value="usuario">Usuario</option>
+            <option value="soporte_it">Soporte IT</option>
+          </select>
         </div>
       </div>
 
