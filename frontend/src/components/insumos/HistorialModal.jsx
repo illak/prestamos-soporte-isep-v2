@@ -150,7 +150,7 @@ export default function HistorialModal({ isOpen, onClose, insumo }) {
         </div>
       ) : (
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">No se pudo cargar el historial</p>
-      )
+      )}
     </Modal>
   );
 }
