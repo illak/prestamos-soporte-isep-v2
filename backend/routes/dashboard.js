@@ -149,91 +149,77 @@ router.get('/prestamos-antiguos', (req, res) => {
 router.get('/graficos', (req, res) => {
   const db = getDb();
 
-  // 1. Préstamos por área
-  const prestamosPorArea = db.prepare(`
-    SELECT
-      u.area_equipo,
-      COUNT(*) as total,
-      SUM(CASE WHEN p.estado = 'Activo' THEN 1 ELSE 0 END) as activos
-    FROM prestamos p
-    JOIN usuarios u ON p.usuario_id = u.id
-    GROUP BY u.area_equipo
-    ORDER BY total DESC
-  `).all();
-
-  // Calcular activos hoy vs pendientes para cada área
-  const prestamosActivosPorArea = db.prepare(`
-    SELECT
-      u.area_equipo,
-      p.fecha_hora_prestamo
-    FROM prestamos p
-    JOIN usuarios u ON p.usuario_id = u.id
-    WHERE p.estado = 'Activo'
-  `).all();
-
-  const areaStats = {};
-  prestamosActivosPorArea.forEach(p => {
-    if (!areaStats[p.area_equipo]) {
-      areaStats[p.area_equipo] = { hoy: 0, pendientes: 0 };
-    }
-    const dias = getDiasTranscurridos(p.fecha_hora_prestamo);
-    if (dias === 0) {
-      areaStats[p.area_equipo].hoy++;
-    } else {
-      areaStats[p.area_equipo].pendientes++;
-    }
-  });
-
-  const prestamosPorAreaConDesglose = prestamosPorArea.map(a => ({
-    ...a,
-    activos_hoy: areaStats[a.area_equipo]?.hoy || 0,
-    pendientes: areaStats[a.area_equipo]?.pendientes || 0
-  }));
-
-  // 2. Timeline de préstamos (últimos 30 días)
+  // Fecha de inicio (últimos 30 días)
   const hace30Dias = new Date();
   hace30Dias.setDate(hace30Dias.getDate() - 30);
   const fechaInicio = hace30Dias.toISOString().split('T')[0];
 
-  const timelinePrestamos = db.prepare(`
+  // 1. Préstamos por día por tipología (últimos 30 días)
+  const prestamosPorDiaTipo = db.prepare(`
     SELECT
-      DATE(fecha_hora_prestamo) as fecha,
-      COUNT(*) as prestamos_creados
-    FROM prestamos
-    WHERE DATE(fecha_hora_prestamo) >= ?
-    GROUP BY DATE(fecha_hora_prestamo)
+      DATE(p.fecha_hora_prestamo) as fecha,
+      i.tipologia,
+      COUNT(*) as cantidad
+    FROM prestamos p
+    JOIN insumos i ON p.insumo_id = i.id
+    WHERE DATE(p.fecha_hora_prestamo) >= ?
+    GROUP BY DATE(p.fecha_hora_prestamo), i.tipologia
     ORDER BY fecha
   `).all(fechaInicio);
 
-  const timelineDevoluciones = db.prepare(`
-    SELECT
-      DATE(fecha_hora_devolucion_real) as fecha,
-      COUNT(*) as devoluciones
-    FROM prestamos
-    WHERE DATE(fecha_hora_devolucion_real) >= ?
-    GROUP BY DATE(fecha_hora_devolucion_real)
-    ORDER BY fecha
-  `).all(fechaInicio);
+  // Obtener tipologías únicas
+  const tipologiasUnicas = [...new Set(prestamosPorDiaTipo.map(p => p.tipologia))];
 
-  // Combinar timeline
-  const fechasSet = new Set();
-  timelinePrestamos.forEach(t => fechasSet.add(t.fecha));
-  timelineDevoluciones.forEach(t => fechasSet.add(t.fecha));
-
-  const timeline = Array.from(fechasSet).sort().map(fecha => {
-    const prestamos = timelinePrestamos.find(t => t.fecha === fecha)?.prestamos_creados || 0;
-    const devoluciones = timelineDevoluciones.find(t => t.fecha === fecha)?.devoluciones || 0;
-    return { fecha, prestamos, devoluciones };
+  // Agrupar por fecha con tipologías como columnas
+  const fechasTipo = [...new Set(prestamosPorDiaTipo.map(p => p.fecha))];
+  const prestamos_por_dia_tipo = fechasTipo.map(fecha => {
+    const row = { fecha };
+    tipologiasUnicas.forEach(tipo => {
+      const match = prestamosPorDiaTipo.find(p => p.fecha === fecha && p.tipologia === tipo);
+      row[tipo] = match ? match.cantidad : 0;
+    });
+    return row;
   });
 
-  // 3. Distribución de estados de insumos
-  const distribucionInsumos = db.prepare(`
-    SELECT estado, COUNT(*) as cantidad
+  // 2. Préstamos por día por área (últimos 30 días)
+  const prestamosPorDiaArea = db.prepare(`
+    SELECT
+      DATE(p.fecha_hora_prestamo) as fecha,
+      u.area_equipo,
+      COUNT(*) as cantidad
+    FROM prestamos p
+    JOIN usuarios u ON p.usuario_id = u.id
+    WHERE DATE(p.fecha_hora_prestamo) >= ?
+    GROUP BY DATE(p.fecha_hora_prestamo), u.area_equipo
+    ORDER BY fecha
+  `).all(fechaInicio);
+
+  // Obtener áreas únicas
+  const areasUnicas = [...new Set(prestamosPorDiaArea.map(p => p.area_equipo))];
+
+  // Agrupar por fecha con áreas como columnas
+  const fechasArea = [...new Set(prestamosPorDiaArea.map(p => p.fecha))];
+  const prestamos_por_dia_area = fechasArea.map(fecha => {
+    const row = { fecha };
+    areasUnicas.forEach(area => {
+      const match = prestamosPorDiaArea.find(p => p.fecha === fecha && p.area_equipo === area);
+      row[area] = match ? match.cantidad : 0;
+    });
+    return row;
+  });
+
+  // 3. Distribución de insumos en préstamo por tipología (actualmente)
+  const distribucionInsumosPorTipo = db.prepare(`
+    SELECT
+      tipologia,
+      COUNT(*) as cantidad
     FROM insumos
-    GROUP BY estado
+    WHERE estado = 'En préstamo'
+    GROUP BY tipologia
+    ORDER BY cantidad DESC
   `).all();
 
-  // 4. Insumos más prestados
+  // 4. Insumos más prestados (histórico)
   const insumosMasPrestados = db.prepare(`
     SELECT
       i.id,
@@ -242,31 +228,14 @@ router.get('/graficos', (req, res) => {
       i.numero_serie,
       COUNT(p.id) as total_prestamos
     FROM insumos i
-    LEFT JOIN prestamos p ON i.id = p.insumo_id
+    JOIN prestamos p ON i.id = p.insumo_id
     GROUP BY i.id
+    HAVING total_prestamos > 0
     ORDER BY total_prestamos DESC
     LIMIT 5
   `).all();
 
-  // 5. Responsables IT con más préstamos gestionados
-  const responsablesIt = db.prepare(`
-    SELECT
-      u.id,
-      u.nombre,
-      u.apellido,
-      COUNT(p.id) as total_prestamos
-    FROM usuarios u
-    JOIN prestamos p ON u.id = p.usuario_it_id
-    WHERE u.rol = 'soporte_it'
-    GROUP BY u.id
-    ORDER BY total_prestamos DESC
-    LIMIT 5
-  `).all().map(r => ({
-    ...r,
-    nombre_completo: `${r.nombre} ${r.apellido}`
-  }));
-
-  // 6. Usuarios/áreas con más préstamos pendientes
+  // 5. Usuarios con más préstamos activos
   const usuariosPendientes = db.prepare(`
     SELECT
       u.id,
@@ -295,49 +264,16 @@ router.get('/graficos', (req, res) => {
     };
   });
 
-  // 7. % de préstamos devueltos el mismo día (último mes)
-  const prestamosUltimoMes = db.prepare(`
-    SELECT
-      COUNT(*) as total,
-      SUM(CASE WHEN DATE(fecha_hora_prestamo) = DATE(fecha_hora_devolucion_real) THEN 1 ELSE 0 END) as mismo_dia
-    FROM prestamos
-    WHERE estado = 'Devuelto' AND DATE(fecha_hora_prestamo) >= ?
-  `).get(fechaInicio);
-
-  const porcentajeMismoDia = prestamosUltimoMes.total > 0
-    ? ((prestamosUltimoMes.mismo_dia / prestamosUltimoMes.total) * 100).toFixed(1)
-    : 0;
-
-  // 8. Tiempo promedio de retención por tipología
-  const tiempoPromedioTipologia = db.prepare(`
-    SELECT
-      i.tipologia,
-      AVG(
-        CAST(
-          (julianday(p.fecha_hora_devolucion_real) - julianday(p.fecha_hora_prestamo)) AS REAL
-        )
-      ) as promedio_dias
-    FROM prestamos p
-    JOIN insumos i ON p.insumo_id = i.id
-    WHERE p.estado = 'Devuelto' AND p.fecha_hora_devolucion_real IS NOT NULL
-    GROUP BY i.tipologia
-    ORDER BY promedio_dias DESC
-  `).all().map(t => ({
-    ...t,
-    promedio_dias: parseFloat(t.promedio_dias?.toFixed(1) || 0)
-  }));
-
   res.json({
     success: true,
     data: {
-      prestamos_por_area: prestamosPorAreaConDesglose,
-      timeline,
-      distribucion_insumos: distribucionInsumos,
+      prestamos_por_dia_tipo,
+      tipologias_unicas: tipologiasUnicas,
+      prestamos_por_dia_area,
+      areas_unicas: areasUnicas,
+      distribucion_insumos_por_tipo: distribucionInsumosPorTipo,
       insumos_mas_prestados: insumosMasPrestados,
-      responsables_it: responsablesIt,
-      usuarios_pendientes: usuariosPendientes,
-      porcentaje_mismo_dia: parseFloat(porcentajeMismoDia),
-      tiempo_promedio_tipologia: tiempoPromedioTipologia
+      usuarios_pendientes: usuariosPendientes
     }
   });
 });

@@ -3,8 +3,6 @@ import { toast } from 'react-toastify';
 import { Plus, Download, RefreshCw, ArrowDownLeft, Eye, Edit, Filter } from 'lucide-react';
 import { prestamosApi, insumosApi, usuariosApi } from '../services/api';
 import Table, { Pagination } from '../components/common/Table';
-import SearchInput from '../components/common/SearchInput';
-import Modal from '../components/common/Modal';
 import { EstadoPrestamoBadge } from '../components/common/Badge';
 import { formatearFechaArg } from '../utils/dateHelpers';
 import PrestamoForm from '../components/prestamos/PrestamoForm';
@@ -125,15 +123,15 @@ export default function PrestamosPage() {
     {
       key: 'id',
       label: 'ID',
-      render: (value) => <span className="text-gray-500">#{value}</span>,
+      render: (value) => <span className="text-gray-500 dark:text-gray-400">#{value}</span>,
     },
     {
       key: 'usuario_nombre_completo',
       label: 'Usuario',
       render: (value, row) => (
         <div>
-          <span className="font-medium">{value}</span>
-          <span className="block text-xs text-gray-500">{row.usuario_area}</span>
+          <span className="font-medium text-gray-900 dark:text-white">{value}</span>
+          <span className="block text-xs text-gray-500 dark:text-gray-400">{row.usuario_area}</span>
         </div>
       ),
     },
@@ -142,9 +140,9 @@ export default function PrestamosPage() {
       label: 'Insumo',
       render: (value, row) => (
         <div>
-          <span>{value}</span>
+          <span className="text-gray-900 dark:text-white">{value}</span>
           {row.insumo_numero_serie && (
-            <span className="block text-xs text-gray-500">S/N: {row.insumo_numero_serie}</span>
+            <span className="block text-xs text-gray-500 dark:text-gray-400">S/N: {row.insumo_numero_serie}</span>
           )}
         </div>
       ),
@@ -152,7 +150,7 @@ export default function PrestamosPage() {
     {
       key: 'fecha_hora_prestamo',
       label: 'Fecha Préstamo',
-      render: (value) => formatearFechaArg(value),
+      render: (value) => <span className="text-gray-900 dark:text-white">{formatearFechaArg(value)}</span>,
     },
     {
       key: 'dias_transcurridos',
@@ -161,19 +159,20 @@ export default function PrestamosPage() {
         row.estado === 'Activo' ? (
           <EstadoPrestamoBadge diasTranscurridos={value} animate={value >= 4} />
         ) : (
-          <span className="text-gray-500">{row.duracion_dias} día(s)</span>
+          <span className="text-gray-500 dark:text-gray-400">{row.duracion_dias} día(s)</span>
         )
       ),
     },
     {
       key: 'it_nombre_completo',
       label: 'Responsable IT',
+      render: (value) => <span className="text-gray-900 dark:text-white">{value}</span>,
     },
     {
       key: 'estado',
       label: 'Estado',
       render: (value) => (
-        <span className={`badge ${value === 'Activo' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
+        <span className={`badge ${value === 'Activo' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
           {value}
         </span>
       ),
@@ -186,7 +185,7 @@ export default function PrestamosPage() {
           {row.estado === 'Activo' && (
             <button
               onClick={() => setDevolverPrestamo(row)}
-              className="btn btn-warning text-xs py-1 px-2"
+              className="btn btn-warning btn-sm"
               title="Registrar devolución"
             >
               <ArrowDownLeft className="w-3.5 h-3.5 mr-1" />
@@ -195,7 +194,7 @@ export default function PrestamosPage() {
           )}
           <button
             onClick={() => setViewPrestamo(row)}
-            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
             title="Ver detalle"
           >
             <Eye className="w-4 h-4" />
@@ -203,7 +202,7 @@ export default function PrestamosPage() {
           {row.estado === 'Activo' && (
             <button
               onClick={() => setEditPrestamo(row)}
-              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
               title="Editar"
             >
               <Edit className="w-4 h-4" />
@@ -227,38 +226,38 @@ export default function PrestamosPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Préstamos</h1>
-        <p className="text-gray-600 mt-1">Gestión de préstamos de equipos</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Préstamos</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Gestión de préstamos de equipos</p>
       </div>
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="text-2xl font-bold text-green-700">{countByDays.hoy}</p>
-          <p className="text-sm text-green-600">Activos hoy</p>
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+          <p className="text-2xl font-bold text-green-700 dark:text-green-400">{countByDays.hoy}</p>
+          <p className="text-sm text-green-600 dark:text-green-500">Activos hoy</p>
         </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <p className="text-2xl font-bold text-yellow-700">{countByDays.dia1}</p>
-          <p className="text-sm text-yellow-600">1 día sin devolver</p>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{countByDays.dia1}</p>
+          <p className="text-sm text-yellow-600 dark:text-yellow-500">1 día sin devolver</p>
         </div>
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-          <p className="text-2xl font-bold text-orange-700">{countByDays.dias2_3}</p>
-          <p className="text-sm text-orange-600">2-3 días sin devolver</p>
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+          <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{countByDays.dias2_3}</p>
+          <p className="text-sm text-orange-600 dark:text-orange-500">2-3 días sin devolver</p>
         </div>
-        <div className={`bg-red-50 border border-red-200 rounded-lg p-3 ${countByDays.dias4_plus > 0 ? 'animate-pulse-alert' : ''}`}>
-          <p className="text-2xl font-bold text-red-700">{countByDays.dias4_plus}</p>
-          <p className="text-sm text-red-600">4+ días sin devolver</p>
+        <div className={`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 ${countByDays.dias4_plus > 0 ? 'animate-pulse-alert' : ''}`}>
+          <p className="text-2xl font-bold text-red-700 dark:text-red-400">{countByDays.dias4_plus}</p>
+          <p className="text-sm text-red-600 dark:text-red-500">4+ días sin devolver</p>
         </div>
       </div>
 
       {/* Actions bar */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             <select
               value={filters.estado}
               onChange={(e) => handleFilterChange('estado', e.target.value)}
-              className="input sm:w-40"
+              className="input filter-select"
             >
               <option value="todos">Todos los estados</option>
               <option value="Activo">Activos</option>
@@ -267,7 +266,7 @@ export default function PrestamosPage() {
             <select
               value={filters.tipologia}
               onChange={(e) => handleFilterChange('tipologia', e.target.value)}
-              className="input sm:w-40"
+              className="input filter-select"
             >
               <option value="">Todas las tipologías</option>
               {tipologias.map((tip) => (
@@ -282,7 +281,7 @@ export default function PrestamosPage() {
               Más filtros
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => fetchPrestamos()}
               className="btn btn-outline"
@@ -294,22 +293,22 @@ export default function PrestamosPage() {
               onClick={handleExport}
               className="btn btn-outline"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Exportar</span>
             </button>
             <button
               onClick={() => setShowForm(true)}
               className="btn btn-primary"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Préstamo
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nuevo Préstamo</span>
             </button>
           </div>
         </div>
 
         {/* Extended filters */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="label">Responsable IT</label>
               <select
@@ -354,7 +353,7 @@ export default function PrestamosPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <Table
           columns={columns}
           data={prestamos}
