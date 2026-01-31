@@ -46,6 +46,35 @@ function initialize() {
     CREATE INDEX IF NOT EXISTS idx_usuarios_rol ON usuarios(rol);
   `);
 
+  // Tabla tipologias
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS tipologias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE,
+      descripcion TEXT,
+      activo INTEGER DEFAULT 1,
+      fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Índice para tipologias
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_tipologias_nombre ON tipologias(nombre);
+    CREATE INDEX IF NOT EXISTS idx_tipologias_activo ON tipologias(activo);
+  `);
+
+  // Migrar tipologías predeterminadas si la tabla está vacía
+  const countTipologias = database.prepare('SELECT COUNT(*) as count FROM tipologias').get();
+  if (countTipologias.count === 0) {
+    const tipologiasDefault = ['Notebook', 'Mouse', 'Teclado', 'Monitor', 'Proyector', 'Cable HDMI', 'Cable VGA', 'Webcam', 'Auriculares', 'Otro'];
+    const insertTipologia = database.prepare('INSERT INTO tipologias (nombre) VALUES (?)');
+    tipologiasDefault.forEach(nombre => {
+      insertTipologia.run(nombre);
+    });
+    console.log('Tipologías predeterminadas insertadas');
+  }
+
   // Tabla insumos
   database.exec(`
     CREATE TABLE IF NOT EXISTS insumos (

@@ -4,6 +4,7 @@ import DashboardPage from './pages/DashboardPage';
 import UsuariosPage from './pages/UsuariosPage';
 import InsumosPage from './pages/InsumosPage';
 import PrestamosPage from './pages/PrestamosPage';
+import TipologiasPage from './pages/TipologiasPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/insumos" element={<InsumosPage />} />
+        <Route path="/tipologias" element={<TipologiasPage />} />
         <Route path="/prestamos" element={<PrestamosPage />} />
       </Routes>
     </Layout>

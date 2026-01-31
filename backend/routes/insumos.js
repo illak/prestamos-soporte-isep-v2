@@ -9,8 +9,14 @@ const { getDiasTranscurridos, getEstadoVisual } = require('../utils/helpers');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const TIPOLOGIAS = ['Notebook', 'Mouse', 'Teclado', 'Monitor', 'Proyector', 'Cable HDMI', 'Cable VGA', 'Webcam', 'Auriculares', 'Otro'];
 const ESTADOS = ['Disponible', 'En préstamo', 'En mantenimiento', 'Dado de baja'];
+
+// Helper para obtener tipologías activas desde la base de datos
+function getTipologiasActivas() {
+  const db = getDb();
+  const tipologias = db.prepare('SELECT nombre FROM tipologias WHERE activo = 1 ORDER BY nombre ASC').all();
+  return tipologias.map(t => t.nombre);
+}
 
 // Validaciones comunes
 const insumoValidations = [
@@ -133,9 +139,10 @@ router.get('/', [
   });
 });
 
-// GET /api/insumos/tipologias - Obtener lista de tipologías
+// GET /api/insumos/tipologias - Obtener lista de tipologías (desde la base de datos)
 router.get('/tipologias', (req, res) => {
-  res.json({ success: true, data: TIPOLOGIAS });
+  const tipologias = getTipologiasActivas();
+  res.json({ success: true, data: tipologias });
 });
 
 // GET /api/insumos/estados - Obtener lista de estados posibles

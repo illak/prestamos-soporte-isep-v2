@@ -9,7 +9,8 @@ import {
   X,
   AlertTriangle,
   Moon,
-  Sun
+  Sun,
+  Tag
 } from 'lucide-react';
 import { dashboardApi } from '../../services/api';
 
@@ -17,7 +18,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Usuarios', href: '/usuarios', icon: Users },
   { name: 'Insumos', href: '/insumos', icon: Package },
-  { name: 'Préstamos', href: '/prestamos', icon: ClipboardList },
+  { name: 'Tipologias', href: '/tipologias', icon: Tag },
+  { name: 'Prestamos', href: '/prestamos', icon: ClipboardList },
 ];
 
 export default function Layout({ children }) {
@@ -112,7 +114,7 @@ export default function Layout({ children }) {
               >
                 <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-gray-400'}`} />
                 {item.name}
-                {item.href === '/prestamos' && alertas.pendientes > 0 && (
+                {item.name === 'Prestamos' && alertas.pendientes > 0 && (
                   <span className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full ${
                     alertas.criticos > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400'
                   }`}>

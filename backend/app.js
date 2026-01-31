@@ -7,6 +7,7 @@ const usuariosRoutes = require('./routes/usuarios');
 const insumosRoutes = require('./routes/insumos');
 const prestamosRoutes = require('./routes/prestamos');
 const dashboardRoutes = require('./routes/dashboard');
+const tipologiasRoutes = require('./routes/tipologias');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/insumos', insumosRoutes);
 app.use('/api/prestamos', prestamosRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/tipologias', tipologiasRoutes);
 
 // Serve static files from React build in production
 app.use(express.static(path.join(__dirname, 'public')));

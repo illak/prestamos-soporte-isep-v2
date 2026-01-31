@@ -163,9 +163,40 @@ export const dashboardApi = {
   getGraficos: () => fetchApi('/dashboard/graficos'),
 };
 
+// TIPOLOGIAS
+export const tipologiasApi = {
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return fetchApi(`/tipologias${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getNombres: () => fetchApi('/tipologias/nombres'),
+
+  getOne: (id) => fetchApi(`/tipologias/${id}`),
+
+  getInsumos: (id, estado = '') => {
+    return fetchApi(`/tipologias/${id}/insumos${estado ? `?estado=${estado}` : ''}`);
+  },
+
+  create: (data) => fetchApi('/tipologias', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+
+  update: (id, data) => fetchApi(`/tipologias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+
+  toggle: (id) => fetchApi(`/tipologias/${id}/toggle`, { method: 'PUT' }),
+
+  delete: (id) => fetchApi(`/tipologias/${id}`, { method: 'DELETE' }),
+};
+
 export default {
   usuarios: usuariosApi,
   insumos: insumosApi,
   prestamos: prestamosApi,
   dashboard: dashboardApi,
+  tipologias: tipologiasApi,
 };

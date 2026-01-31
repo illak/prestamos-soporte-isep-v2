@@ -12,11 +12,37 @@ function seed() {
   db.exec('DELETE FROM prestamos');
   db.exec('DELETE FROM insumos');
   db.exec('DELETE FROM usuarios');
+  db.exec('DELETE FROM tipologias');
 
   // Resetear autoincrement
-  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('usuarios', 'insumos', 'prestamos')");
+  db.exec("DELETE FROM sqlite_sequence WHERE name IN ('usuarios', 'insumos', 'prestamos', 'tipologias')");
 
   console.log('Tablas limpiadas...');
+
+  // Insertar tipologías
+  const tipologias = [
+    { nombre: 'Notebook', descripcion: 'Computadoras portátiles' },
+    { nombre: 'Mouse', descripcion: 'Dispositivos de entrada tipo mouse' },
+    { nombre: 'Teclado', descripcion: 'Teclados USB y inalámbricos' },
+    { nombre: 'Monitor', descripcion: 'Pantallas y monitores' },
+    { nombre: 'Proyector', descripcion: 'Proyectores y cañones' },
+    { nombre: 'Cable HDMI', descripcion: 'Cables de conexión HDMI' },
+    { nombre: 'Cable VGA', descripcion: 'Cables de conexión VGA' },
+    { nombre: 'Webcam', descripcion: 'Cámaras web para videoconferencias' },
+    { nombre: 'Auriculares', descripcion: 'Auriculares con y sin micrófono' },
+    { nombre: 'Otro', descripcion: 'Otros tipos de equipamiento' },
+  ];
+
+  const insertTipologia = db.prepare(`
+    INSERT INTO tipologias (nombre, descripcion)
+    VALUES (?, ?)
+  `);
+
+  tipologias.forEach(t => {
+    insertTipologia.run(t.nombre, t.descripcion);
+  });
+
+  console.log(`Insertadas ${tipologias.length} tipologías...`);
 
   // Insertar usuarios de Soporte IT
   const usuariosIt = [
