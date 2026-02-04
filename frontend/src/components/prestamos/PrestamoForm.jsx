@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import { es } from 'date-fns/locale';
+import { Search, Loader2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { prestamosApi, insumosApi, usuariosApi } from '../../services/api';
 
@@ -12,6 +13,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
   const [usuariosIt, setUsuariosIt] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [searchingUsuarios, setSearchingUsuarios] = useState(false);
   const [busquedaInsumo, setBusquedaInsumo] = useState('');
   const [busquedaUsuario, setBusquedaUsuario] = useState('');
   const [fechaPrestamo, setFechaPrestamo] = useState(new Date());
@@ -31,19 +33,18 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
     },
   });
 
+  // Cargar opciones iniciales (insumos y usuarios IT)
   useEffect(() => {
     const fetchOptions = async () => {
       setLoadingOptions(true);
       try {
-        const [insRes, itRes, usRes] = await Promise.all([
+        const [insRes, itRes] = await Promise.all([
           insumosApi.getDisponibles(),
           usuariosApi.getSoporteIt(),
-          usuariosApi.getAll({ activo: '1', limit: 100 }),
         ]);
 
         if (insRes.success) setInsumosDisponibles(insRes.data);
         if (itRes.success) setUsuariosIt(itRes.data);
-        if (usRes.success) setUsuarios(usRes.data);
 
         if (prestamo) {
           setValue('usuario_it_id', prestamo.usuario_it_id.toString());
@@ -59,8 +60,41 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
 
     if (isOpen) {
       fetchOptions();
+      setBusquedaUsuario('');
+      setUsuarios([]);
     }
   }, [isOpen, prestamo, setValue]);
+
+  // Búsqueda de usuarios con debounce - búsqueda del lado del servidor
+  useEffect(() => {
+    if (!isOpen || isEditing) return;
+
+    const searchUsuarios = async () => {
+      if (!busquedaUsuario || busquedaUsuario.length < 2) {
+        setUsuarios([]);
+        return;
+      }
+
+      setSearchingUsuarios(true);
+      try {
+        const response = await usuariosApi.getAll({
+          activo: '1',
+          busqueda: busquedaUsuario,
+          limit: 50
+        });
+        if (response.success) {
+          setUsuarios(response.data);
+        }
+      } catch (error) {
+        console.error('Error buscando usuarios:', error);
+      } finally {
+        setSearchingUsuarios(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchUsuarios, 300);
+    return () => clearTimeout(timeoutId);
+  }, [busquedaUsuario, isOpen, isEditing]);
 
   const filteredInsumos = insumosDisponibles.filter((i) => {
     if (!busquedaInsumo) return true;
@@ -69,16 +103,6 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
       i.nombre.toLowerCase().includes(search) ||
       i.tipologia.toLowerCase().includes(search) ||
       (i.numero_serie && i.numero_serie.toLowerCase().includes(search))
-    );
-  });
-
-  const filteredUsuarios = usuarios.filter((u) => {
-    if (!busquedaUsuario) return true;
-    const search = busquedaUsuario.toLowerCase();
-    return (
-      u.nombre.toLowerCase().includes(search) ||
-      u.apellido.toLowerCase().includes(search) ||
-      u.dni.includes(search)
     );
   });
 
@@ -159,20 +183,32 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
         {!isEditing && (
           <div>
             <label className="label">Usuario que recibe el préstamo *</label>
-            <input
-              type="text"
-              placeholder="Buscar por nombre, apellido o DNI..."
-              value={busquedaUsuario}
-              onChange={(e) => setBusquedaUsuario(e.target.value)}
-              className="input mb-2"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Escriba al menos 2 caracteres para buscar..."
+                value={busquedaUsuario}
+                onChange={(e) => setBusquedaUsuario(e.target.value)}
+                className="input pl-10 mb-2"
+              />
+              {searchingUsuarios && (
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+              )}
+            </div>
             <select
               {...register('usuario_id', { required: 'Seleccione un usuario' })}
               className="input"
-              disabled={loadingOptions}
+              disabled={searchingUsuarios}
             >
-              <option value="">Seleccionar usuario...</option>
-              {filteredUsuarios.map((u) => (
+              <option value="">
+                {busquedaUsuario.length < 2
+                  ? 'Escriba para buscar usuarios...'
+                  : usuarios.length === 0
+                    ? 'No se encontraron usuarios'
+                    : 'Seleccionar usuario...'}
+              </option>
+              {usuarios.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.apellido}, {u.nombre} - DNI: {u.dni} ({u.area_equipo})
                 </option>
@@ -180,6 +216,11 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
             </select>
             {errors.usuario_id && (
               <p className="text-red-500 text-sm mt-1">{errors.usuario_id.message}</p>
+            )}
+            {busquedaUsuario.length > 0 && busquedaUsuario.length < 2 && (
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                Escriba al menos 2 caracteres para buscar
+              </p>
             )}
           </div>
         )}
