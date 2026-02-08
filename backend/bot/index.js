@@ -50,7 +50,7 @@ function createBot() {
 
     // Verificar autorización
     if (!config.isAuthorized(msg.from.id)) {
-      console.log(`⛔ Usuario ${msg.from.id} no autorizado`);
+      config.logUnauthorizedAccess(msg.from, `comando "${texto}"`);
       if (texto.startsWith('/')) {
         await bot.sendMessage(chatId, config.messages.unauthorized, { parse_mode: 'Markdown' });
       }
@@ -149,11 +149,13 @@ function createBot() {
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
+    const isGroup = isGroupChat(query.message.chat);
 
     console.log(`🔘 Callback recibido de ${query.from.id}: "${data}"`);
 
     // Verificar autorización
     if (!config.isAuthorized(query.from.id)) {
+      config.logUnauthorizedAccess(query.from, `callback "${data}"`);
       await bot.answerCallbackQuery(query.id, { text: 'No autorizado', show_alert: true });
       return;
     }
@@ -189,7 +191,7 @@ function createBot() {
       // Opciones del menú principal
       if (data === 'menu_prestar') {
         await bot.answerCallbackQuery(query.id);
-        await prestamos.iniciarPrestamo(bot, chatId);
+        await prestamos.iniciarPrestamo(bot, chatId, isGroup);
         return;
       }
 
@@ -213,13 +215,13 @@ function createBot() {
 
       if (data === 'menu_buscar_insumo') {
         await bot.answerCallbackQuery(query.id);
-        await consultas.iniciarBusquedaInsumo(bot, chatId);
+        await consultas.iniciarBusquedaInsumo(bot, chatId, isGroup);
         return;
       }
 
       if (data === 'menu_buscar_usuario') {
         await bot.answerCallbackQuery(query.id);
-        await consultas.iniciarBusquedaUsuario(bot, chatId);
+        await consultas.iniciarBusquedaUsuario(bot, chatId, isGroup);
         return;
       }
 

@@ -209,21 +209,49 @@ function formatResumenActivos(prestamos) {
 
 /**
  * Formatea el resumen del día
- * @param {object} metricas
+ * @param {object} metricas - Datos del endpoint /dashboard/metricas
  * @returns {string}
  */
 function formatResumenDia(metricas) {
   const fecha = formatFecha(new Date());
 
-  return `📊 *RESUMEN DEL DÍA* - ${fecha}
+  // Extraer datos de la estructura anidada de la API
+  const prestamos = metricas.prestamos || {};
+  const insumos = metricas.insumos || {};
+  const usuarios = metricas.usuarios || {};
+
+  let text = `📊 *RESUMEN DEL DÍA* - ${fecha}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📤 Préstamos activos: ${metricas.prestamosActivos || 0}
-📦 Insumos disponibles: ${metricas.insumosDisponibles || 0}
-📦 Total insumos: ${metricas.totalInsumos || 0}
-👥 Usuarios activos: ${metricas.usuariosActivos || 0}
+📤 *Préstamos*
+   • Activos hoy: ${prestamos.activos_hoy || 0}
+   • Pendientes (1+ días): ${prestamos.pendientes || 0}
+   • Total activos: ${prestamos.total_activos || 0}`;
 
-⚠️ Préstamos críticos: ${metricas.prestamosCriticos || 0}`;
+  // Desglose si hay préstamos pendientes
+  if (prestamos.desglose) {
+    const d = prestamos.desglose;
+    if (d.dia_1 > 0 || d.dias_2_3 > 0 || d.dias_4_plus > 0) {
+      text += `\n   📅 Desglose:`;
+      if (d.dia_1 > 0) text += `\n      • 1 día: ${d.dia_1}`;
+      if (d.dias_2_3 > 0) text += `\n      • 2-3 días: ${d.dias_2_3}`;
+      if (d.dias_4_plus > 0) text += `\n      • 4+ días: ${d.dias_4_plus} ⚠️`;
+    }
+  }
+
+  text += `
+
+📦 *Insumos*
+   • Disponibles: ${insumos.disponibles || 0}
+   • En préstamo: ${insumos.en_prestamo || 0}
+   • En mantenimiento: ${insumos.en_mantenimiento || 0}
+   • Total: ${insumos.total || 0}
+
+👥 *Usuarios*
+   • Activos: ${usuarios.activos || 0}
+   • Soporte IT: ${usuarios.soporte_it || 0}`;
+
+  return text;
 }
 
 /**
