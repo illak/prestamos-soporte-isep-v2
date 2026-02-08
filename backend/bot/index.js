@@ -31,47 +31,115 @@ function createBot() {
 
   console.log('🤖 Bot de Telegram iniciando...');
 
-  // Registrar comandos
-  commands.registerCommands(bot);
+  // ============================================
+  // MANEJADOR DE MENSAJES DE TEXTO (PRINCIPAL)
+  // ============================================
+  bot.on('text', async (msg) => {
+    const chatId = msg.chat.id;
+    const texto = msg.text;
 
-  // Registrar comandos adicionales
-  bot.onText(/\/prestar/, async (msg) => {
+    console.log(`📨 Mensaje recibido de ${msg.from.id}: "${texto}"`);
+
+    // Verificar autorización
     if (!config.isAuthorized(msg.from.id)) {
-      return bot.sendMessage(msg.chat.id, config.messages.unauthorized, { parse_mode: 'Markdown' });
+      console.log(`⛔ Usuario ${msg.from.id} no autorizado`);
+      if (texto.startsWith('/')) {
+        await bot.sendMessage(chatId, config.messages.unauthorized, { parse_mode: 'Markdown' });
+      }
+      return;
     }
-    await prestamos.iniciarPrestamo(bot, msg.chat.id);
+
+    // Procesar comandos
+    if (texto.startsWith('/')) {
+      const command = texto.split(' ')[0].toLowerCase();
+      console.log(`🔧 Comando: ${command}`);
+
+      switch (command) {
+        case '/start':
+          await commands.handleStart(bot, msg);
+          break;
+        case '/menu':
+          await commands.handleMenu(bot, msg);
+          break;
+        case '/ayuda':
+        case '/help':
+          await commands.handleAyuda(bot, msg);
+          break;
+        case '/activos':
+          await commands.handleActivos(bot, msg);
+          break;
+        case '/resumen':
+          await commands.handleResumen(bot, msg);
+          break;
+        case '/prestar':
+          await prestamos.iniciarPrestamo(bot, chatId);
+          break;
+        case '/devolver':
+          await devoluciones.iniciarDevolucion(bot, chatId);
+          break;
+        case '/buscar':
+          await bot.sendMessage(chatId, '🔍 *¿Qué deseas buscar?*', {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '📦 Buscar Insumo', callback_data: 'menu_buscar_insumo' },
+                  { text: '👤 Buscar Usuario', callback_data: 'menu_buscar_usuario' },
+                ],
+                [{ text: '❌ Cancelar', callback_data: 'menu_principal' }],
+              ],
+            },
+          });
+          break;
+        default:
+          // Comando no reconocido
+          break;
+      }
+      return;
+    }
+
+    // Procesar mensajes de texto (no comandos)
+    try {
+      console.log(`📝 Procesando texto: "${texto}"`);
+
+      // Intentar procesar con cada handler en orden
+      const handledByPrestamos = await prestamos.handleMessage(bot, msg);
+      if (handledByPrestamos) {
+        console.log('✅ Manejado por prestamos');
+        return;
+      }
+
+      const handledByDevoluciones = await devoluciones.handleMessage(bot, msg);
+      if (handledByDevoluciones) {
+        console.log('✅ Manejado por devoluciones');
+        return;
+      }
+
+      const handledByConsultas = await consultas.handleMessage(bot, msg);
+      if (handledByConsultas) {
+        console.log('✅ Manejado por consultas');
+        return;
+      }
+
+      // Si no hay flujo activo, mostrar sugerencia
+      console.log('ℹ️ Mensaje no procesado - sin flujo activo');
+      await bot.sendMessage(chatId, '💡 No hay una operación activa. Usa /menu para ver las opciones disponibles.', {
+        reply_markup: menus.botonMenuPrincipal(),
+      });
+    } catch (error) {
+      console.error('❌ Error procesando mensaje:', error);
+      await bot.sendMessage(chatId, config.messages.error);
+    }
   });
 
-  bot.onText(/\/devolver/, async (msg) => {
-    if (!config.isAuthorized(msg.from.id)) {
-      return bot.sendMessage(msg.chat.id, config.messages.unauthorized, { parse_mode: 'Markdown' });
-    }
-    await devoluciones.iniciarDevolucion(bot, msg.chat.id);
-  });
-
-  bot.onText(/\/buscar/, async (msg) => {
-    if (!config.isAuthorized(msg.from.id)) {
-      return bot.sendMessage(msg.chat.id, config.messages.unauthorized, { parse_mode: 'Markdown' });
-    }
-    // Mostrar opciones de búsqueda
-    await bot.sendMessage(msg.chat.id, '🔍 *¿Qué deseas buscar?*', {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '📦 Buscar Insumo', callback_data: 'menu_buscar_insumo' },
-            { text: '👤 Buscar Usuario', callback_data: 'menu_buscar_usuario' },
-          ],
-          [{ text: '❌ Cancelar', callback_data: 'menu_principal' }],
-        ],
-      },
-    });
-  });
-
-  // Manejador de callbacks (botones inline)
+  // ============================================
+  // MANEJADOR DE CALLBACKS (BOTONES INLINE)
+  // ============================================
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
+
+    console.log(`🔘 Callback recibido de ${query.from.id}: "${data}"`);
 
     // Verificar autorización
     if (!config.isAuthorized(query.from.id)) {
@@ -145,50 +213,42 @@ function createBot() {
       }
 
       // Delegar a handlers específicos
-      if (await prestamos.handleCallback(bot, query)) return;
-      if (await devoluciones.handleCallback(bot, query)) return;
-      if (await consultas.handleCallback(bot, query)) return;
+      if (await prestamos.handleCallback(bot, query)) {
+        console.log('✅ Callback manejado por prestamos');
+        return;
+      }
+      if (await devoluciones.handleCallback(bot, query)) {
+        console.log('✅ Callback manejado por devoluciones');
+        return;
+      }
+      if (await consultas.handleCallback(bot, query)) {
+        console.log('✅ Callback manejado por consultas');
+        return;
+      }
 
       // Callback no manejado
+      console.log('⚠️ Callback no manejado:', data);
       await bot.answerCallbackQuery(query.id);
     } catch (error) {
-      console.error('Error en callback:', error);
+      console.error('❌ Error en callback:', error);
       await bot.answerCallbackQuery(query.id, { text: 'Error al procesar', show_alert: true });
     }
   });
 
-  // Manejador de mensajes de texto
-  bot.on('message', async (msg) => {
-    // Ignorar si no es texto o es un comando
-    if (!msg.text || msg.text.startsWith('/')) return;
-
-    const chatId = msg.chat.id;
-
-    // Verificar autorización
-    if (!config.isAuthorized(msg.from.id)) {
-      return;
-    }
-
-    try {
-      // Intentar procesar con cada handler
-      if (await prestamos.handleMessage(bot, msg)) return;
-      if (await devoluciones.handleMessage(bot, msg)) return;
-      if (await consultas.handleMessage(bot, msg)) return;
-
-      // Si no hay flujo activo, mostrar ayuda
-      // (Comentado para evitar spam - descomentar si se desea)
-      // await bot.sendMessage(chatId, 'Usa /menu para ver las opciones disponibles.');
-    } catch (error) {
-      console.error('Error procesando mensaje:', error);
-    }
-  });
-
-  // Manejador de errores de polling
+  // ============================================
+  // MANEJADOR DE ERRORES
+  // ============================================
   bot.on('polling_error', (error) => {
-    console.error('Error de polling:', error.code, error.message);
+    console.error('❌ Error de polling:', error.code, error.message);
   });
 
-  // Configurar comandos del bot en Telegram
+  bot.on('error', (error) => {
+    console.error('❌ Error del bot:', error.message);
+  });
+
+  // ============================================
+  // CONFIGURAR COMANDOS EN TELEGRAM
+  // ============================================
   bot.setMyCommands([
     { command: 'start', description: 'Iniciar el bot' },
     { command: 'menu', description: 'Mostrar menú principal' },
