@@ -13,6 +13,14 @@ const config = {
     .map(id => id.trim())
     .filter(id => id),
 
+  // IDs de chats/grupos autorizados (separados por coma)
+  // Si está configurado, solo permite uso en estos grupos + chat privado con el bot
+  // Obtener el ID del grupo usando /chatinfo en el grupo
+  allowedChatIds: (process.env.TELEGRAM_ALLOWED_CHAT_IDS || '')
+    .split(',')
+    .map(id => id.trim())
+    .filter(id => id),
+
   // Modo estricto: si es true, REQUIERE TELEGRAM_ALLOWED_IDS configurado
   // En producción siempre debería ser true
   strictMode: process.env.TELEGRAM_STRICT_MODE !== 'false',
@@ -51,6 +59,12 @@ No tienes autorización para usar este bot.
 Contacta al administrador del sistema.
     `.trim(),
 
+    unauthorizedChat: `
+⛔ *Chat No Autorizado*
+
+Este bot solo puede ser utilizado en el grupo oficial de ISEP Soporte IT o en chat privado con el bot.
+    `.trim(),
+
     help: `
 📖 *Comandos Disponibles*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,7 +91,7 @@ Contacta al administrador del sistema.
  * @param {string|number} telegramId - ID de Telegram del usuario
  * @returns {boolean}
  */
-config.isAuthorized = (telegramId) => {
+config.isUserAuthorized = (telegramId) => {
   // Si no hay IDs configurados
   if (config.allowedUserIds.length === 0) {
     // En modo estricto, denegar acceso
@@ -92,15 +106,71 @@ config.isAuthorized = (telegramId) => {
   return config.allowedUserIds.includes(String(telegramId));
 };
 
+// Alias para compatibilidad
+config.isAuthorized = config.isUserAuthorized;
+
+/**
+ * Verifica si un chat está autorizado
+ * Implementa Opción B: Permite grupo autorizado O chat privado con el bot
+ * @param {string|number} chatId - ID del chat
+ * @param {string|number} userId - ID del usuario (para verificar chat privado)
+ * @param {string} chatType - Tipo de chat ('private', 'group', 'supergroup')
+ * @returns {boolean}
+ */
+config.isChatAuthorized = (chatId, userId, chatType) => {
+  // Si no hay chats configurados, permitir cualquier chat (comportamiento anterior)
+  if (config.allowedChatIds.length === 0) {
+    return true;
+  }
+
+  // Chat privado: siempre permitido si el usuario está autorizado
+  // (En chat privado, chatId === userId)
+  if (chatType === 'private') {
+    return true;
+  }
+
+  // Grupos: verificar si el chatId está en la lista de permitidos
+  return config.allowedChatIds.includes(String(chatId));
+};
+
+/**
+ * Verifica autorización completa (usuario + chat)
+ * @param {string|number} userId - ID del usuario
+ * @param {string|number} chatId - ID del chat
+ * @param {string} chatType - Tipo de chat
+ * @returns {{ authorized: boolean, reason: string|null }}
+ */
+config.checkFullAuthorization = (userId, chatId, chatType) => {
+  // Primero verificar usuario
+  if (!config.isUserAuthorized(userId)) {
+    return { authorized: false, reason: 'user' };
+  }
+
+  // Luego verificar chat
+  if (!config.isChatAuthorized(chatId, userId, chatType)) {
+    return { authorized: false, reason: 'chat' };
+  }
+
+  return { authorized: true, reason: null };
+};
+
 /**
  * Registra un intento de acceso no autorizado
  * @param {object} user - Objeto de usuario de Telegram
  * @param {string} action - Acción intentada
+ * @param {string} reason - Razón del rechazo ('user' o 'chat')
+ * @param {object} chat - Objeto de chat (opcional)
  */
-config.logUnauthorizedAccess = (user, action = 'acceso') => {
+config.logUnauthorizedAccess = (user, action = 'acceso', reason = 'user', chat = null) => {
   const username = user.username ? `@${user.username}` : 'sin username';
   const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'desconocido';
-  console.warn(`🚫 Acceso no autorizado: ${action} por ID ${user.id} (${name}, ${username})`);
+
+  if (reason === 'chat' && chat) {
+    const chatName = chat.title || 'chat privado';
+    console.warn(`🚫 Chat no autorizado: ${action} por ID ${user.id} (${name}, ${username}) en chat "${chatName}" (ID: ${chat.id})`);
+  } else {
+    console.warn(`🚫 Usuario no autorizado: ${action} por ID ${user.id} (${name}, ${username})`);
+  }
 };
 
 /**

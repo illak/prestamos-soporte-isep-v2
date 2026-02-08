@@ -130,6 +130,63 @@ async function handleResumen(bot, msg) {
 }
 
 /**
+ * Comando /chatinfo - Mostrar información del chat actual (para configuración)
+ */
+async function handleChatInfo(bot, msg) {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const chat = msg.chat;
+
+  // Solo usuarios autorizados pueden ver esta info
+  if (!config.isAuthorized(userId)) {
+    return bot.sendMessage(chatId, config.messages.unauthorized, { parse_mode: 'Markdown' });
+  }
+
+  const chatType = chat.type;
+  const isGroup = chatType === 'group' || chatType === 'supergroup';
+  const chatTitle = chat.title || 'Chat Privado';
+
+  let texto = `ℹ️ *Información del Chat*
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 *Tipo:* ${chatType}
+🆔 *Chat ID:* \`${chatId}\`
+📝 *Nombre:* ${chatTitle}`;
+
+  if (isGroup) {
+    texto += `
+
+💡 *Para autorizar este grupo:*
+Agrega este ID a \`TELEGRAM_ALLOWED_CHAT_IDS\`:
+\`\`\`
+TELEGRAM_ALLOWED_CHAT_IDS=${chatId}
+\`\`\``;
+
+    // Verificar si el chat ya está autorizado
+    const isAuthorized = config.allowedChatIds.includes(String(chatId));
+    texto += `\n\n${isAuthorized ? '✅ Este chat está autorizado' : '⚠️ Este chat NO está autorizado'}`;
+  } else {
+    texto += `\n\n✅ Los chats privados siempre están permitidos para usuarios autorizados.`;
+  }
+
+  // Mostrar info del usuario también
+  texto += `
+
+👤 *Tu información:*
+🆔 ID: \`${userId}\`
+📝 Nombre: ${msg.from.first_name || ''} ${msg.from.last_name || ''}`;
+
+  if (msg.from.username) {
+    texto += `\n🔗 Username: @${msg.from.username}`;
+  }
+
+  await bot.sendMessage(chatId, texto, {
+    parse_mode: 'Markdown',
+    reply_markup: menus.botonMenuPrincipal(),
+  });
+}
+
+/**
  * Registra todos los comandos en el bot
  * @param {TelegramBot} bot - Instancia del bot
  */
@@ -140,6 +197,7 @@ function registerCommands(bot) {
   bot.onText(/\/help/, (msg) => handleAyuda(bot, msg));
   bot.onText(/\/activos/, (msg) => handleActivos(bot, msg));
   bot.onText(/\/resumen/, (msg) => handleResumen(bot, msg));
+  bot.onText(/\/chatinfo/, (msg) => handleChatInfo(bot, msg));
 }
 
 module.exports = {
@@ -148,5 +206,6 @@ module.exports = {
   handleAyuda,
   handleActivos,
   handleResumen,
+  handleChatInfo,
   registerCommands,
 };

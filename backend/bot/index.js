@@ -48,11 +48,15 @@ function createBot() {
 
     console.log(`📨 Mensaje recibido de ${msg.from.id} en ${isGroup ? 'grupo' : 'privado'}: "${texto}"`);
 
-    // Verificar autorización
-    if (!config.isAuthorized(msg.from.id)) {
-      config.logUnauthorizedAccess(msg.from, `comando "${texto}"`);
+    // Verificar autorización completa (usuario + chat)
+    const auth = config.checkFullAuthorization(msg.from.id, chatId, msg.chat.type);
+    if (!auth.authorized) {
+      config.logUnauthorizedAccess(msg.from, `comando "${texto}"`, auth.reason, msg.chat);
       if (texto.startsWith('/')) {
-        await bot.sendMessage(chatId, config.messages.unauthorized, { parse_mode: 'Markdown' });
+        const message = auth.reason === 'chat'
+          ? config.messages.unauthorizedChat
+          : config.messages.unauthorized;
+        await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
       }
       return;
     }
@@ -98,6 +102,9 @@ function createBot() {
               ],
             },
           });
+          break;
+        case '/chatinfo':
+          await commands.handleChatInfo(bot, msg);
           break;
         default:
           // Comando no reconocido
@@ -153,10 +160,12 @@ function createBot() {
 
     console.log(`🔘 Callback recibido de ${query.from.id}: "${data}"`);
 
-    // Verificar autorización
-    if (!config.isAuthorized(query.from.id)) {
-      config.logUnauthorizedAccess(query.from, `callback "${data}"`);
-      await bot.answerCallbackQuery(query.id, { text: 'No autorizado', show_alert: true });
+    // Verificar autorización completa (usuario + chat)
+    const auth = config.checkFullAuthorization(query.from.id, chatId, query.message.chat.type);
+    if (!auth.authorized) {
+      config.logUnauthorizedAccess(query.from, `callback "${data}"`, auth.reason, query.message.chat);
+      const alertText = auth.reason === 'chat' ? 'Chat no autorizado' : 'No autorizado';
+      await bot.answerCallbackQuery(query.id, { text: alertText, show_alert: true });
       return;
     }
 
@@ -270,6 +279,7 @@ function createBot() {
     { command: 'activos', description: 'Ver préstamos activos' },
     { command: 'resumen', description: 'Resumen del día' },
     { command: 'buscar', description: 'Buscar insumo o usuario' },
+    { command: 'chatinfo', description: 'Info del chat (para config)' },
     { command: 'ayuda', description: 'Mostrar ayuda' },
   ]).then(() => {
     console.log('✅ Comandos del bot configurados');
@@ -279,6 +289,7 @@ function createBot() {
 
   console.log('✅ Bot de Telegram iniciado correctamente');
   console.log(`📋 Usuarios autorizados: ${config.allowedUserIds.length > 0 ? config.allowedUserIds.join(', ') : 'TODOS (modo desarrollo)'}`);
+  console.log(`🏠 Chats autorizados: ${config.allowedChatIds.length > 0 ? config.allowedChatIds.join(', ') : 'TODOS + privados'}`);
 
   return bot;
 }
