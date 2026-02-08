@@ -1,0 +1,16 @@
+# Dockerfile para el Bot de Telegram
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar package.json del backend
+COPY backend/package*.json ./
+
+# Instalar dependencias
+RUN npm ci --only=production
+
+# Copiar código del bot
+COPY backend/bot ./bot
+
+# Comando para ejecutar el bot
+CMD ["node", "bot/index.js"]
