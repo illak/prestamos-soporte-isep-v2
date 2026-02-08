@@ -15,6 +15,13 @@ const devoluciones = require('./handlers/devoluciones');
 const consultas = require('./handlers/consultas');
 
 /**
+ * Verifica si un chat es un grupo
+ */
+function isGroupChat(chat) {
+  return chat.type === 'group' || chat.type === 'supergroup';
+}
+
+/**
  * Inicializa y configura el bot
  */
 function createBot() {
@@ -37,8 +44,9 @@ function createBot() {
   bot.on('text', async (msg) => {
     const chatId = msg.chat.id;
     const texto = msg.text;
+    const isGroup = isGroupChat(msg.chat);
 
-    console.log(`📨 Mensaje recibido de ${msg.from.id}: "${texto}"`);
+    console.log(`📨 Mensaje recibido de ${msg.from.id} en ${isGroup ? 'grupo' : 'privado'}: "${texto}"`);
 
     // Verificar autorización
     if (!config.isAuthorized(msg.from.id)) {
@@ -51,7 +59,7 @@ function createBot() {
 
     // Procesar comandos
     if (texto.startsWith('/')) {
-      const command = texto.split(' ')[0].toLowerCase();
+      const command = texto.split(' ')[0].toLowerCase().split('@')[0]; // Remover @bot_name si existe
       console.log(`🔧 Comando: ${command}`);
 
       switch (command) {
@@ -72,7 +80,7 @@ function createBot() {
           await commands.handleResumen(bot, msg);
           break;
         case '/prestar':
-          await prestamos.iniciarPrestamo(bot, chatId);
+          await prestamos.iniciarPrestamo(bot, chatId, isGroup);
           break;
         case '/devolver':
           await devoluciones.iniciarDevolucion(bot, chatId);
@@ -121,11 +129,14 @@ function createBot() {
         return;
       }
 
-      // Si no hay flujo activo, mostrar sugerencia
-      console.log('ℹ️ Mensaje no procesado - sin flujo activo');
-      await bot.sendMessage(chatId, '💡 No hay una operación activa. Usa /menu para ver las opciones disponibles.', {
-        reply_markup: menus.botonMenuPrincipal(),
-      });
+      // Si no hay flujo activo y es un mensaje privado, mostrar sugerencia
+      // En grupos no mostramos esto para evitar spam
+      if (!isGroup) {
+        console.log('ℹ️ Mensaje no procesado - sin flujo activo');
+        await bot.sendMessage(chatId, '💡 No hay una operación activa. Usa /menu para ver las opciones disponibles.', {
+          reply_markup: menus.botonMenuPrincipal(),
+        });
+      }
     } catch (error) {
       console.error('❌ Error procesando mensaje:', error);
       await bot.sendMessage(chatId, config.messages.error);

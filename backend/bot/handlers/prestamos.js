@@ -59,19 +59,29 @@ function clearSession(chatId) {
 /**
  * Inicia el flujo de préstamo
  */
-async function iniciarPrestamo(bot, chatId) {
+async function iniciarPrestamo(bot, chatId, isGroup = false) {
   const session = getSession(chatId);
   session.estado = ESTADOS.BUSCANDO_INSUMO;
   session.insumo = null;
   session.usuario = null;
   session.responsableIt = null;
+  session.isGroup = isGroup;
+
+  let mensaje = '🔍 *Buscar Insumo Disponible*\n\nEscribe el nombre, tipo o número de serie del insumo:';
+  if (isGroup) {
+    mensaje += '\n\n💡 _Respondé a este mensaje con tu búsqueda_';
+  }
 
   await bot.sendMessage(
     chatId,
-    '🔍 *Buscar Insumo Disponible*\n\nEscribe el nombre, tipo o número de serie del insumo:',
+    mensaje,
     {
       parse_mode: 'Markdown',
-      reply_markup: menus.botonCancelar(),
+      reply_markup: {
+        ...menus.botonCancelar(),
+        force_reply: isGroup,
+        selective: isGroup,
+      },
     }
   );
 }
@@ -124,13 +134,23 @@ async function seleccionarInsumo(bot, chatId, insumoId) {
     session.estado = ESTADOS.BUSCANDO_USUARIO;
 
     const insumoInfo = formatInsumoDetalle(session.insumo);
+    const isGroup = session.isGroup || false;
+
+    let mensaje = `✅ *Insumo Seleccionado*\n\n${insumoInfo}\n\n👤 *Buscar Usuario*\nEscribe el nombre, apellido o DNI del usuario que recibirá el préstamo:`;
+    if (isGroup) {
+      mensaje += '\n\n💡 _Respondé a este mensaje con tu búsqueda_';
+    }
 
     await bot.sendMessage(
       chatId,
-      `✅ *Insumo Seleccionado*\n\n${insumoInfo}\n\n👤 *Buscar Usuario*\nEscribe el nombre, apellido o DNI del usuario que recibirá el préstamo:`,
+      mensaje,
       {
         parse_mode: 'Markdown',
-        reply_markup: menus.botonCancelar(),
+        reply_markup: {
+          ...menus.botonCancelar(),
+          force_reply: isGroup,
+          selective: isGroup,
+        },
       }
     );
   } catch (error) {

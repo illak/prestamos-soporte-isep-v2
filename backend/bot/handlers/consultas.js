@@ -48,16 +48,25 @@ function clearConsultaSession(chatId) {
 /**
  * Inicia búsqueda de insumo
  */
-async function iniciarBusquedaInsumo(bot, chatId) {
+async function iniciarBusquedaInsumo(bot, chatId, isGroup = false) {
   const session = getConsultaSession(chatId);
   session.estado = ESTADOS.BUSCANDO_INSUMO;
 
+  let mensaje = '🔍 *Buscar Insumo*\n\nEscribe el nombre, tipo o número de serie:';
+  if (isGroup) {
+    mensaje += '\n\n💡 _Respondé a este mensaje con tu búsqueda_';
+  }
+
   await bot.sendMessage(
     chatId,
-    '🔍 *Buscar Insumo*\n\nEscribe el nombre, tipo o número de serie:',
+    mensaje,
     {
       parse_mode: 'Markdown',
-      reply_markup: menus.botonCancelar(),
+      reply_markup: {
+        ...menus.botonCancelar(),
+        force_reply: isGroup,
+        selective: isGroup,
+      },
     }
   );
 }
@@ -65,16 +74,25 @@ async function iniciarBusquedaInsumo(bot, chatId) {
 /**
  * Inicia búsqueda de usuario
  */
-async function iniciarBusquedaUsuario(bot, chatId) {
+async function iniciarBusquedaUsuario(bot, chatId, isGroup = false) {
   const session = getConsultaSession(chatId);
   session.estado = ESTADOS.BUSCANDO_USUARIO;
 
+  let mensaje = '👤 *Buscar Usuario*\n\nEscribe el nombre, apellido o DNI:';
+  if (isGroup) {
+    mensaje += '\n\n💡 _Respondé a este mensaje con tu búsqueda_';
+  }
+
   await bot.sendMessage(
     chatId,
-    '👤 *Buscar Usuario*\n\nEscribe el nombre, apellido o DNI:',
+    mensaje,
     {
       parse_mode: 'Markdown',
-      reply_markup: menus.botonCancelar(),
+      reply_markup: {
+        ...menus.botonCancelar(),
+        force_reply: isGroup,
+        selective: isGroup,
+      },
     }
   );
 }
