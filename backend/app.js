@@ -4,35 +4,40 @@ const path = require('path');
 
 const db = require('./database');
 const usuariosRoutes = require('./routes/usuarios');
-const insumosRoutes = require('./routes/insumos');
+const inventarioRoutes = require('./routes/inventario');
 const prestamosRoutes = require('./routes/prestamos');
 const dashboardRoutes = require('./routes/dashboard');
-const tipologiasRoutes = require('./routes/tipologias');
+const categoriasRoutes = require('./routes/categorias');
+const areasRoutes = require('./routes/areas');
+const tiposRoutes = require('./routes/tipos');
+const estadosRoutes = require('./routes/estados');
+const ubicacionesRoutes = require('./routes/ubicaciones');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/insumos', insumosRoutes);
+app.use('/api/inventario', inventarioRoutes);
 app.use('/api/prestamos', prestamosRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/tipologias', tipologiasRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/areas', areasRoutes);
+app.use('/api/tipos', tiposRoutes);
+app.use('/api/estados', estadosRoutes);
+app.use('/api/ubicaciones', ubicacionesRoutes);
 
 // Serve static files from React build in production
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Catch-all handler for React routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -42,7 +47,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize database and start server
 db.initialize();
 
 app.listen(PORT, () => {
