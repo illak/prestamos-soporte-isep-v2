@@ -366,6 +366,8 @@ function fixAreaEquipoConstraint(database) {
 
   console.log('Corrigiendo constraint NOT NULL de area_equipo...');
   database.pragma('foreign_keys = OFF');
+  // Limpiar tabla temporal si quedó de un intento fallido anterior
+  database.exec('DROP TABLE IF EXISTS usuarios_fixed');
   database.exec(`
     CREATE TABLE usuarios_fixed (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
