@@ -367,25 +367,11 @@ function fixAreaEquipoConstraint(database) {
   console.log('Corrigiendo constraint NOT NULL de area_equipo...');
   database.pragma('foreign_keys = OFF');
 
-  // Normalizar roles inválidos antes de migrar (el CHECK nuevo sólo acepta 'usuario'/'soporte_it')
-  const rolesInvalidos = database.prepare(
-    "SELECT DISTINCT rol FROM usuarios WHERE rol IS NULL OR rol NOT IN ('usuario', 'soporte_it')"
+  // Loguear qué roles existen antes de migrar (para diagnóstico)
+  const rolesActuales = database.prepare(
+    "SELECT rol, COUNT(*) as count FROM usuarios GROUP BY rol"
   ).all();
-  if (rolesInvalidos.length > 0) {
-    console.log('Roles inválidos detectados, normalizando:', rolesInvalidos.map(r => r.rol));
-    // Mapeo heurístico: cualquier variante de soporte/admin/it → 'soporte_it', el resto → 'usuario'
-    database.exec(`
-      UPDATE usuarios
-      SET rol = CASE
-        WHEN LOWER(COALESCE(rol, '')) LIKE '%soporte%'
-          OR LOWER(COALESCE(rol, '')) LIKE '%admin%'
-          OR LOWER(COALESCE(rol, '')) = 'it'
-        THEN 'soporte_it'
-        ELSE 'usuario'
-      END
-      WHERE rol IS NULL OR rol NOT IN ('usuario', 'soporte_it')
-    `);
-  }
+  console.log('Roles actuales en usuarios:', rolesActuales);
 
   // Limpiar tabla temporal si quedó de un intento fallido anterior
   database.exec('DROP TABLE IF EXISTS usuarios_fixed');
@@ -403,7 +389,32 @@ function fixAreaEquipoConstraint(database) {
       fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
       fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-    INSERT INTO usuarios_fixed SELECT * FROM usuarios;
+  `);
+
+  // Copiar normalizando roles en el INSERT (el CHECK se valida sobre el valor ya mapeado).
+  // Detectar qué columnas tiene la tabla vieja para construir el INSERT con columnas explícitas.
+  const colsViejos = database.pragma('table_info(usuarios)').map(c => c.name);
+  const hasIdAreaViejo = colsViejos.includes('id_area');
+  const idAreaSelect = hasIdAreaViejo ? 'id_area' : 'NULL';
+
+  database.exec(`
+    INSERT INTO usuarios_fixed
+      (id, mail, nombre, apellido, dni, area_equipo, id_area, rol, activo, fecha_creacion, fecha_modificacion)
+    SELECT
+      id, mail, nombre, apellido, dni, area_equipo, ${idAreaSelect},
+      CASE
+        WHEN LOWER(COALESCE(rol, '')) LIKE '%soporte%'
+          OR LOWER(COALESCE(rol, '')) LIKE '%admin%'
+          OR LOWER(COALESCE(rol, '')) = 'it'
+        THEN 'soporte_it'
+        WHEN rol IN ('usuario', 'soporte_it') THEN rol
+        ELSE 'usuario'
+      END AS rol,
+      activo, fecha_creacion, fecha_modificacion
+    FROM usuarios;
+  `);
+
+  database.exec(`
     DROP TABLE usuarios;
     ALTER TABLE usuarios_fixed RENAME TO usuarios;
     CREATE INDEX IF NOT EXISTS idx_usuarios_mail ON usuarios(mail);
