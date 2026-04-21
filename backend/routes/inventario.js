@@ -34,15 +34,15 @@ const BASE_SELECT = `
 
 const inventarioValidations = [
   body('id_categoria').isInt({ min: 1 }).withMessage('Categoría requerida'),
-  body('id_tipo').optional().isInt({ min: 1 }),
-  body('condicion').optional().isIn(['Entregable', 'Asignable']),
-  body('fabricante').optional().trim(),
-  body('modelo').optional().trim(),
-  body('serie').optional().trim(),
-  body('lbl_activo').optional().trim(),
-  body('id_estado').optional().isInt({ min: 1 }),
-  body('id_ubicacion').optional().isInt({ min: 1 }),
-  body('notas').optional().trim()
+  body('id_tipo').optional({ nullable: true }).isInt({ min: 1 }),
+  body('condicion').optional({ nullable: true }).isIn(['Entregable', 'Asignable']),
+  body('fabricante').optional({ nullable: true }).trim(),
+  body('modelo').optional({ nullable: true }).trim(),
+  body('serie').optional({ nullable: true }).trim(),
+  body('lbl_activo').optional({ nullable: true }).trim(),
+  body('id_estado').optional({ nullable: true }).isInt({ min: 1 }),
+  body('id_ubicacion').optional({ nullable: true }).isInt({ min: 1 }),
+  body('notas').optional({ nullable: true }).trim()
 ];
 
 // GET /api/inventario
@@ -519,6 +519,94 @@ router.put('/:id/estado', [
   db.prepare('UPDATE inventario SET id_estado = ?, fecha_modificacion = CURRENT_TIMESTAMP WHERE id = ?').run(id_estado, id);
   const updated = db.prepare(`${BASE_SELECT} WHERE inv.id = ?`).get(id);
   res.json({ success: true, data: updated });
+});
+
+// PUT /api/inventario/:id/asignar - Asignación fija (solo Asignables)
+router.put('/:id/asignar', [
+  param('id').isInt(),
+  body('id_ubicacion').isInt({ min: 1 }).withMessage('Ubicación requerida'),
+  body('id_asignado').optional({ nullable: true }).isInt({ min: 1 }),
+  body('fecha_asignacion').optional().isISO8601(),
+  body('fecha_devolucion_esperada').optional({ nullable: true }).isISO8601()
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+  const db = getDb();
+  const id = req.params.id;
+  const { id_asignado, id_ubicacion, fecha_asignacion, fecha_devolucion_esperada, notas } = req.body;
+
+  const item = db.prepare('SELECT * FROM inventario WHERE id = ?').get(id);
+  if (!item) return res.status(404).json({ success: false, error: 'Item no encontrado' });
+  if (item.condicion !== 'Asignable') {
+    return res.status(400).json({ success: false, error: 'Solo se pueden asignar items con condición "Asignable". Los "Entregables" se gestionan con préstamos.' });
+  }
+
+  const estadoDispId = getEstadoId(db, 'Disponible');
+  if (item.id_estado !== estadoDispId) {
+    return res.status(400).json({ success: false, error: 'El item no está disponible para asignación' });
+  }
+
+  // Verificar ubicación existe
+  const ubicacion = db.prepare('SELECT * FROM ubicaciones WHERE id = ?').get(id_ubicacion);
+  if (!ubicacion) return res.status(400).json({ success: false, error: 'Ubicación no encontrada' });
+
+  // Verificar usuario si se proporcionó
+  let usuario = null;
+  if (id_asignado) {
+    usuario = db.prepare('SELECT * FROM usuarios WHERE id = ? AND activo = 1').get(id_asignado);
+    if (!usuario) return res.status(400).json({ success: false, error: 'Usuario no encontrado o inactivo' });
+  }
+
+  const estadoAsigId = getEstadoId(db, 'Asignado');
+  const fechaAsig = fecha_asignacion || new Date().toISOString();
+
+  db.prepare(`
+    UPDATE inventario
+    SET id_asignado = ?, id_ubicacion = ?, fecha_asignacion = ?, fecha_devolucion = ?, id_estado = ?,
+        notas = COALESCE(?, notas), fecha_modificacion = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(id_asignado || null, id_ubicacion, fechaAsig, fecha_devolucion_esperada || null, estadoAsigId, notas || null, id);
+
+  const updated = db.prepare(`${BASE_SELECT} WHERE inv.id = ?`).get(id);
+  const destino = usuario ? `${usuario.nombre} ${usuario.apellido}` : ubicacion.desc;
+  res.json({ success: true, data: updated, message: `Item asignado a ${destino}` });
+});
+
+// PUT /api/inventario/:id/liberar - Liberar asignación fija
+router.put('/:id/liberar', [
+  param('id').isInt(),
+  body('fecha_devolucion_real').optional().isISO8601()
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+  const db = getDb();
+  const id = req.params.id;
+  const { fecha_devolucion_real } = req.body;
+
+  const item = db.prepare('SELECT * FROM inventario WHERE id = ?').get(id);
+  if (!item) return res.status(404).json({ success: false, error: 'Item no encontrado' });
+  if (item.condicion !== 'Asignable') {
+    return res.status(400).json({ success: false, error: 'Solo aplica a items con condición "Asignable"' });
+  }
+
+  const estadoAsigId = getEstadoId(db, 'Asignado');
+  if (item.id_estado !== estadoAsigId) {
+    return res.status(400).json({ success: false, error: 'El item no está actualmente asignado' });
+  }
+
+  const estadoDispId = getEstadoId(db, 'Disponible');
+
+  db.prepare(`
+    UPDATE inventario
+    SET id_asignado = NULL, fecha_asignacion = NULL,
+        fecha_devolucion = ?, id_estado = ?, fecha_modificacion = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(fecha_devolucion_real || new Date().toISOString(), estadoDispId, id);
+
+  const updated = db.prepare(`${BASE_SELECT} WHERE inv.id = ?`).get(id);
+  res.json({ success: true, data: updated, message: 'Asignación liberada correctamente' });
 });
 
 // DELETE /api/inventario/:id

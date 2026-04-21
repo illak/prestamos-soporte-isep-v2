@@ -34,7 +34,7 @@ export default function HistorialModal({ isOpen, onClose, insumo }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Historial de Préstamos - ${insumo?.nombre}`}
+      title={`Historial - ${[insumo?.fabricante, insumo?.modelo].filter(Boolean).join(' ') || insumo?.serie || 'Item'}`}
       size="lg"
     >
       {loading ? (
@@ -48,11 +48,13 @@ export default function HistorialModal({ isOpen, onClose, insumo }) {
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex items-center gap-4">
             <Package className="w-10 h-10 text-gray-400" />
             <div className="flex-1">
-              <h3 className="font-medium text-gray-900 dark:text-white">{historial.insumo.tipologia} - {historial.insumo.nombre}</h3>
-              {historial.insumo.numero_serie && (
-                <p className="text-sm text-gray-600 dark:text-gray-300">S/N: {historial.insumo.numero_serie}</p>
+              <h3 className="font-medium text-gray-900 dark:text-white">
+                {historial.item.categoria_desc} - {[historial.item.fabricante, historial.item.modelo].filter(Boolean).join(' ') || '-'}
+              </h3>
+              {historial.item.serie && (
+                <p className="text-sm text-gray-600 dark:text-gray-300">S/N: {historial.item.serie}</p>
               )}
-              <EstadoInsumoBadge estado={historial.insumo.estado} />
+              <EstadoInsumoBadge estado={historial.item.estado_desc} />
             </div>
           </div>
 

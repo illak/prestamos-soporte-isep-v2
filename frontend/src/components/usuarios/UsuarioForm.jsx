@@ -8,14 +8,10 @@ export default function UsuarioForm({ isOpen, onClose, onSuccess, usuario }) {
   const isEditing = !!usuario;
   const [areas, setAreas] = useState([]);
   const [loadingAreas, setLoadingAreas] = useState(true);
-  const [customArea, setCustomArea] = useState(false);
-
   const {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
@@ -23,13 +19,10 @@ export default function UsuarioForm({ isOpen, onClose, onSuccess, usuario }) {
       nombre: '',
       apellido: '',
       dni: '',
-      area_equipo: '',
-      area_equipo_custom: '',
+      id_area: '',
       rol: 'usuario',
     },
   });
-
-  const areaSeleccionada = watch('area_equipo');
 
   // Cargar áreas existentes
   useEffect(() => {
@@ -54,60 +47,26 @@ export default function UsuarioForm({ isOpen, onClose, onSuccess, usuario }) {
 
   useEffect(() => {
     if (usuario) {
-      // Verificar si el área del usuario está en la lista
-      const areaEnLista = areas.includes(usuario.area_equipo);
-      setCustomArea(!areaEnLista && areas.length > 0);
-
       reset({
         mail: usuario.mail,
         nombre: usuario.nombre,
         apellido: usuario.apellido,
         dni: usuario.dni,
-        area_equipo: areaEnLista ? usuario.area_equipo : '__custom__',
-        area_equipo_custom: !areaEnLista ? usuario.area_equipo : '',
+        id_area: usuario.id_area ?? '',
         rol: usuario.rol,
       });
     } else {
-      setCustomArea(false);
-      reset({
-        mail: '',
-        nombre: '',
-        apellido: '',
-        dni: '',
-        area_equipo: '',
-        area_equipo_custom: '',
-        rol: 'usuario',
-      });
+      reset({ mail: '', nombre: '', apellido: '', dni: '', id_area: '', rol: 'usuario' });
     }
   }, [usuario, reset, areas]);
 
-  // Manejar cambio de área
-  useEffect(() => {
-    if (areaSeleccionada === '__custom__') {
-      setCustomArea(true);
-    } else if (areaSeleccionada !== '__custom__' && areaSeleccionada !== '') {
-      setCustomArea(false);
-      setValue('area_equipo_custom', '');
-    }
-  }, [areaSeleccionada, setValue]);
-
   const onSubmit = async (data) => {
-    // Determinar el área final
-    const areaFinal = data.area_equipo === '__custom__' || customArea
-      ? data.area_equipo_custom
-      : data.area_equipo;
-
-    if (!areaFinal || areaFinal.trim() === '') {
-      toast.error('El área es requerida');
-      return;
-    }
-
     const submitData = {
       mail: data.mail,
       nombre: data.nombre,
       apellido: data.apellido,
       dni: data.dni,
-      area_equipo: areaFinal.trim(),
+      id_area: data.id_area ? parseInt(data.id_area) : null,
       rol: data.rol,
     };
 
@@ -228,61 +187,18 @@ export default function UsuarioForm({ isOpen, onClose, onSuccess, usuario }) {
         </div>
 
         <div>
-          <label className="label">Área/Equipo *</label>
+          <label className="label">Área</label>
           {loadingAreas ? (
             <div className="input bg-gray-100 dark:bg-gray-700 flex items-center">
               <span className="text-gray-500 dark:text-gray-400">Cargando áreas...</span>
             </div>
-          ) : areas.length > 0 ? (
-            <>
-              <select
-                {...register('area_equipo', {
-                  required: !customArea ? 'El área es requerida' : false,
-                })}
-                className="input"
-              >
-                <option value="">Seleccionar área...</option>
-                {areas.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-                <option value="__custom__">+ Agregar nueva área</option>
-              </select>
-
-              {customArea && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    {...register('area_equipo_custom', {
-                      required: customArea ? 'El área personalizada es requerida' : false,
-                    })}
-                    className="input"
-                    placeholder="Escribir nombre del área..."
-                  />
-                </div>
-              )}
-            </>
           ) : (
-            <input
-              type="text"
-              {...register('area_equipo_custom', {
-                required: 'El área es requerida',
-              })}
-              className="input"
-              placeholder="Ej: Sistemas, Administración, Pedagógico..."
-            />
-          )}
-          {errors.area_equipo && (
-            <p className="text-red-500 text-sm mt-1">{errors.area_equipo.message}</p>
-          )}
-          {errors.area_equipo_custom && (
-            <p className="text-red-500 text-sm mt-1">{errors.area_equipo_custom.message}</p>
-          )}
-          {areas.length === 0 && !loadingAreas && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              No hay áreas cargadas. Ingrese el nombre del área manualmente o importe usuarios con áreas definidas.
-            </p>
+            <select {...register('id_area')} className="input">
+              <option value="">Sin área asignada</option>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>{area.desc}</option>
+              ))}
+            </select>
           )}
         </div>
 

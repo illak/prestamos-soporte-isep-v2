@@ -85,9 +85,9 @@ export default function DevolverModal({ isOpen, onClose, onSuccess, insumo }) {
             <Package className="w-5 h-5 text-gray-500 dark:text-gray-400 mt-0.5" />
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Insumo</p>
-              <p className="font-medium text-gray-900 dark:text-white">{prestamoActivo.insumo_descripcion}</p>
-              {prestamoActivo.insumo_numero_serie && (
-                <p className="text-sm text-gray-600 dark:text-gray-300">S/N: {prestamoActivo.insumo_numero_serie}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{prestamoActivo.inventario_descripcion}</p>
+              {prestamoActivo.inventario_serie && (
+                <p className="text-sm text-gray-600 dark:text-gray-300">S/N: {prestamoActivo.inventario_serie}</p>
               )}
             </div>
           </div>

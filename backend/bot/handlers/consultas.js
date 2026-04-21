@@ -176,19 +176,21 @@ async function verDetalleInsumo(bot, chatId, insumoId) {
 
     const insumo = response.data;
     let mensaje = formatInsumoDetalle(insumo);
-    mensaje += `\n📊 *Estado:* ${insumo.estado}`;
+    mensaje += `\n📊 *Estado:* ${insumo.estado_desc || insumo.estado}`;
+    mensaje += `\n🔖 *Condición:* ${insumo.condicion}`;
 
-    if (insumo.observaciones) {
-      mensaje += `\n📝 *Observaciones:* ${insumo.observaciones}`;
+    if (insumo.notas) {
+      mensaje += `\n📝 *Notas:* ${insumo.notas}`;
+    }
+    if (insumo.ubicacion_desc) {
+      mensaje += `\n📍 *Ubicación:* ${insumo.ubicacion_piso ? `${insumo.ubicacion_piso} — ` : ''}${insumo.ubicacion_desc}`;
     }
 
-    // Si está en préstamo, mostrar info del préstamo activo
-    if (insumo.estado === 'En préstamo') {
-      try {
-        const prestamoRes = await insumosApi.getOne(insumoId);
-        // Nota: Aquí podrías agregar un endpoint para obtener el préstamo activo del insumo
-      } catch (e) {
-        // Ignorar
+    // Si está asignado, mostrar a quién
+    if (insumo.estado_desc === 'Asignado' && insumo.asignado_nombre) {
+      mensaje += `\n👤 *Asignado a:* ${insumo.asignado_nombre} ${insumo.asignado_apellido}`;
+      if (insumo.fecha_asignacion) {
+        mensaje += `\n📅 *Desde:* ${new Date(insumo.fecha_asignacion).toLocaleDateString('es-AR')}`;
       }
     }
 
@@ -196,7 +198,7 @@ async function verDetalleInsumo(bot, chatId, insumoId) {
       inline_keyboard: [],
     };
 
-    if (insumo.estado === 'Disponible') {
+    if ((insumo.estado_desc || insumo.estado) === 'Disponible' && insumo.condicion === 'Entregable') {
       keyboard.inline_keyboard.push([
         { text: '📤 Prestar este insumo', callback_data: `sel_insumo_${insumo.id}` },
       ]);

@@ -84,7 +84,7 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
   const onSubmit = async (data) => {
     try {
       await prestamosApi.create({
-        insumo_id: insumo.id,
+        inventario_id: insumo.id,
         usuario_id: parseInt(data.usuario_id),
         usuario_it_id: parseInt(data.usuario_it_id),
         fecha_hora_prestamo: fechaPrestamo.toISOString(),
@@ -107,9 +107,11 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
           <div className="flex items-center gap-3">
             <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <div>
-              <p className="font-medium text-blue-900 dark:text-blue-100">{insumo.tipologia} - {insumo.nombre}</p>
-              {insumo.numero_serie && (
-                <p className="text-sm text-blue-700 dark:text-blue-300">S/N: {insumo.numero_serie}</p>
+              <p className="font-medium text-blue-900 dark:text-blue-100">
+                {insumo.categoria_desc} - {[insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || '-'}
+              </p>
+              {insumo.serie && (
+                <p className="text-sm text-blue-700 dark:text-blue-300">S/N: {insumo.serie}</p>
               )}
             </div>
           </div>
@@ -148,7 +150,7 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
             </option>
             {usuarios.map((u) => (
               <option key={u.id} value={u.id}>
-                {u.apellido}, {u.nombre} - DNI: {u.dni} ({u.area_equipo})
+                {u.apellido}, {u.nombre} - DNI: {u.dni} ({u.area_desc || u.area_equipo || '-'})
               </option>
             ))}
           </select>
@@ -164,7 +166,7 @@ export default function PrestarModal({ isOpen, onClose, onSuccess, insumo }) {
             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
               <p className="font-medium text-gray-900 dark:text-white">{selectedUsuario.nombre} {selectedUsuario.apellido}</p>
               <p className="text-gray-600 dark:text-gray-300">{selectedUsuario.mail}</p>
-              <p className="text-gray-600 dark:text-gray-300">Área: {selectedUsuario.area_equipo}</p>
+              <p className="text-gray-600 dark:text-gray-300">Área: {selectedUsuario.area_desc || selectedUsuario.area_equipo || '-'}</p>
             </div>
           )}
         </div>

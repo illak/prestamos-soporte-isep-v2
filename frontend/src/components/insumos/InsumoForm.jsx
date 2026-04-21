@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import Modal from '../common/Modal';
-import { insumosApi } from '../../services/api';
+import { insumosApi, ubicacionesApi } from '../../services/api';
 
 export default function InsumoForm({ isOpen, onClose, onSuccess, insumo, tipologias, estados }) {
+  const [ubicaciones, setUbicaciones] = useState([]);
   const isEditing = !!insumo;
 
   const {
@@ -15,47 +16,78 @@ export default function InsumoForm({ isOpen, onClose, onSuccess, insumo, tipolog
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      tipologia: '',
-      nombre: '',
-      descripcion: '',
-      numero_serie: '',
-      estado: 'Disponible',
-      observaciones: '',
+      id_categoria: '',
+      condicion: 'Entregable',
+      fabricante: '',
+      modelo: '',
+      serie: '',
+      lbl_activo: '',
+      id_ubicacion: '',
+      id_estado: '',
+      notas: '',
     },
   });
 
-  const currentEstado = watch('estado');
+  const currentEstadoId = watch('id_estado');
+  const estadoAsignadoId = estados.find(e => e.desc === 'Asignado')?.id;
+
+  useEffect(() => {
+    if (isOpen) {
+      ubicacionesApi.getAll({ activo: '1' })
+        .then(r => { if (r.success) setUbicaciones(r.data); })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (insumo) {
       reset({
-        tipologia: insumo.tipologia,
-        nombre: insumo.nombre,
-        descripcion: insumo.descripcion || '',
-        numero_serie: insumo.numero_serie || '',
-        estado: insumo.estado,
-        observaciones: insumo.observaciones || '',
+        id_categoria: insumo.id_categoria ?? '',
+        condicion: insumo.condicion ?? 'Entregable',
+        fabricante: insumo.fabricante ?? '',
+        modelo: insumo.modelo ?? '',
+        serie: insumo.serie ?? '',
+        lbl_activo: insumo.lbl_activo ?? '',
+        id_ubicacion: insumo.id_ubicacion ?? '',
+        id_estado: insumo.id_estado ?? '',
+        notas: insumo.notas ?? '',
       });
     } else {
+      const dispId = estados.find(e => e.desc === 'Disponible')?.id ?? '';
       reset({
-        tipologia: '',
-        nombre: '',
-        descripcion: '',
-        numero_serie: '',
-        estado: 'Disponible',
-        observaciones: '',
+        id_categoria: '',
+        condicion: 'Entregable',
+        fabricante: '',
+        modelo: '',
+        serie: '',
+        lbl_activo: '',
+        id_ubicacion: '',
+        id_estado: dispId,
+        notas: '',
       });
     }
-  }, [insumo, reset]);
+  }, [insumo, reset, estados]);
 
   const onSubmit = async (data) => {
     try {
+      const payload = {
+        id_categoria: parseInt(data.id_categoria),
+        condicion: data.condicion,
+        fabricante: data.fabricante || null,
+        modelo: data.modelo || null,
+        serie: data.serie || null,
+        lbl_activo: data.lbl_activo || null,
+        id_ubicacion: data.id_ubicacion ? parseInt(data.id_ubicacion) : null,
+        id_estado: data.id_estado ? parseInt(data.id_estado) : undefined,
+        notas: data.notas || null,
+      };
+
       if (isEditing) {
-        await insumosApi.update(insumo.id, data);
-        toast.success('Insumo actualizado correctamente');
+        await insumosApi.update(insumo.id, payload);
+        toast.success('Item actualizado correctamente');
       } else {
-        await insumosApi.create(data);
-        toast.success('Insumo creado correctamente');
+        await insumosApi.create(payload);
+        toast.success('Item creado correctamente');
       }
       onSuccess();
     } catch (error) {
@@ -63,102 +95,131 @@ export default function InsumoForm({ isOpen, onClose, onSuccess, insumo, tipolog
     }
   };
 
-  // Estados permitidos para cambio manual
-  const estadosPermitidos = isEditing
-    ? estados.filter(e => {
-        // No permitir cambiar a "En préstamo" manualmente
-        if (e === 'En préstamo' && insumo.estado !== 'En préstamo') return false;
-        // No permitir cambiar de "En préstamo" a "Disponible" directamente
-        if (e === 'Disponible' && insumo.estado === 'En préstamo') return false;
-        return true;
-      })
-    : ['Disponible'];
+  const isAsignado = isEditing && insumo.id_estado === estadoAsignadoId;
+
+  // Estados disponibles para cambio manual (excluir "Asignado")
+  const estadosEditables = isEditing
+    ? estados.filter(e => e.desc !== 'Asignado')
+    : [];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Editar Insumo' : 'Nuevo Insumo'}
+      title={isEditing ? 'Editar Item de Inventario' : 'Nuevo Item de Inventario'}
       size="md"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Categoría + Condición */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Tipología *</label>
+            <label className="label">Categoría *</label>
             <select
-              {...register('tipologia', { required: 'La tipología es requerida' })}
+              {...register('id_categoria', { required: 'La categoría es requerida' })}
               className="input"
             >
               <option value="">Seleccionar...</option>
-              {tipologias.map((tip) => (
-                <option key={tip} value={tip}>{tip}</option>
+              {tipologias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.desc}</option>
               ))}
             </select>
-            {errors.tipologia && (
-              <p className="text-red-500 text-sm mt-1">{errors.tipologia.message}</p>
+            {errors.id_categoria && (
+              <p className="text-red-500 text-sm mt-1">{errors.id_categoria.message}</p>
             )}
           </div>
 
           <div>
-            <label className="label">Nombre *</label>
-            <input
-              type="text"
-              {...register('nombre', { required: 'El nombre es requerido' })}
-              className="input"
-              placeholder="Ej: Lenovo ThinkPad T14"
-            />
-            {errors.nombre && (
-              <p className="text-red-500 text-sm mt-1">{errors.nombre.message}</p>
-            )}
+            <label className="label">Condición</label>
+            <select {...register('condicion')} className="input">
+              <option value="Entregable">Entregable (préstamo diario)</option>
+              <option value="Asignable">Asignable (asignación fija)</option>
+            </select>
           </div>
         </div>
 
-        <div>
-          <label className="label">Descripción</label>
-          <textarea
-            {...register('descripcion')}
-            className="input"
-            rows={2}
-            placeholder="Características técnicas adicionales..."
-          />
+        {/* Fabricante + Modelo */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Fabricante</label>
+            <input
+              type="text"
+              {...register('fabricante')}
+              className="input"
+              placeholder="Ej: Lenovo, HP, Dell..."
+            />
+          </div>
+          <div>
+            <label className="label">Modelo</label>
+            <input
+              type="text"
+              {...register('modelo')}
+              className="input"
+              placeholder="Ej: ThinkPad T14, ProBook 450..."
+            />
+          </div>
         </div>
 
+        {/* Serie + Etiqueta */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Número de Serie</label>
             <input
               type="text"
-              {...register('numero_serie')}
+              {...register('serie')}
               className="input"
               placeholder="Opcional"
             />
           </div>
-
-          {isEditing && (
-            <div>
-              <label className="label">Estado</label>
-              <select
-                {...register('estado')}
-                className="input"
-                disabled={insumo.estado === 'En préstamo'}
-              >
-                {estadosPermitidos.map((est) => (
-                  <option key={est} value={est}>{est}</option>
-                ))}
-              </select>
-              {insumo.estado === 'En préstamo' && (
-                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                  El estado se cambiará automáticamente al registrar la devolución
-                </p>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="label">Etiqueta (lbl_activo)</label>
+            <input
+              type="text"
+              {...register('lbl_activo')}
+              className="input"
+              placeholder="Ej: NB-001"
+            />
+          </div>
         </div>
 
+        {/* Ubicación */}
         <div>
-          <label className="label">Observaciones</label>
+          <label className="label">Ubicación / Piso</label>
+          <select {...register('id_ubicacion')} className="input">
+            <option value="">Sin ubicación asignada</option>
+            {ubicaciones.map((ub) => (
+              <option key={ub.id} value={ub.id}>
+                {ub.piso ? `${ub.piso} — ${ub.desc}` : ub.desc}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Estado (solo al editar) */}
+        {isEditing && (
+          <div>
+            <label className="label">Estado</label>
+            <select
+              {...register('id_estado')}
+              className="input"
+              disabled={isAsignado}
+            >
+              {estadosEditables.map((e) => (
+                <option key={e.id} value={e.id}>{e.desc}</option>
+              ))}
+            </select>
+            {isAsignado && (
+              <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                Estado "Asignado" se gestiona automáticamente con préstamos
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Notas */}
+        <div>
+          <label className="label">Notas</label>
           <textarea
-            {...register('observaciones')}
+            {...register('notas')}
             className="input"
             rows={2}
             placeholder="Notas adicionales..."
@@ -166,19 +227,10 @@ export default function InsumoForm({ isOpen, onClose, onSuccess, insumo, tipolog
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-outline"
-            disabled={isSubmitting}
-          >
+          <button type="button" onClick={onClose} className="btn btn-outline" disabled={isSubmitting}>
             Cancelar
           </button>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
             {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
           </button>
         </div>

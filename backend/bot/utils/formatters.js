@@ -78,10 +78,12 @@ function getDiasTranscurridos(fecha) {
  * @returns {string}
  */
 function formatInsumoLista(insumo, index = null) {
-  const icono = getIconoTipologia(insumo.tipologia);
-  const serie = insumo.numero_serie ? ` - ${insumo.numero_serie}` : '';
+  const cat = insumo.categoria_desc || insumo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = [insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || insumo.nombre || '-';
+  const serie = (insumo.serie || insumo.numero_serie) ? ` - ${insumo.serie || insumo.numero_serie}` : '';
   const prefix = index !== null ? `${index + 1}. ` : '';
-  return `${prefix}${icono} ${insumo.nombre}${serie}`;
+  return `${prefix}${icono} ${nombre}${serie}`;
 }
 
 /**
@@ -90,15 +92,15 @@ function formatInsumoLista(insumo, index = null) {
  * @returns {string}
  */
 function formatInsumoDetalle(insumo) {
-  const icono = getIconoTipologia(insumo.tipologia);
-  let text = `${icono} *${insumo.nombre}*\n`;
-  text += `📁 Tipo: ${insumo.tipologia}\n`;
-  if (insumo.numero_serie) {
-    text += `🔢 Serie: \`${insumo.numero_serie}\`\n`;
-  }
-  if (insumo.descripcion) {
-    text += `📝 ${insumo.descripcion}\n`;
-  }
+  const cat = insumo.categoria_desc || insumo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = [insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || insumo.nombre || '-';
+  const serie = insumo.serie || insumo.numero_serie;
+  let text = `${icono} *${nombre}*\n`;
+  text += `📁 Categoría: ${cat}\n`;
+  if (insumo.lbl_activo) text += `🏷️ Etiqueta: ${insumo.lbl_activo}\n`;
+  if (serie) text += `🔢 Serie: \`${serie}\`\n`;
+  if (insumo.notas || insumo.descripcion) text += `📝 ${insumo.notas || insumo.descripcion}\n`;
   return text;
 }
 
@@ -110,7 +112,7 @@ function formatInsumoDetalle(insumo) {
  */
 function formatUsuarioLista(usuario, index = null) {
   const prefix = index !== null ? `${index + 1}. ` : '';
-  return `${prefix}👤 ${usuario.apellido}, ${usuario.nombre} - DNI: ${usuario.dni} (${usuario.area_equipo})`;
+  return `${prefix}👤 ${usuario.apellido}, ${usuario.nombre} - DNI: ${usuario.dni} (${usuario.area_desc || usuario.area_equipo || '-'})`;
 }
 
 /**
@@ -121,7 +123,7 @@ function formatUsuarioLista(usuario, index = null) {
 function formatUsuarioDetalle(usuario) {
   return `👤 *${usuario.nombre} ${usuario.apellido}*
 📋 DNI: ${usuario.dni}
-🏢 Área: ${usuario.area_equipo}
+🏢 Área: ${usuario.area_desc || usuario.area_equipo || '-'}
 📧 ${usuario.mail}`;
 }
 
@@ -132,12 +134,16 @@ function formatUsuarioDetalle(usuario) {
  * @returns {string}
  */
 function formatPrestamoLista(prestamo, index = null) {
-  const icono = getIconoTipologia(prestamo.insumo_tipologia || prestamo.tipologia);
+  const cat = prestamo.inventario_categoria || prestamo.insumo_tipologia || prestamo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = prestamo.inventario_descripcion
+    || [prestamo.inventario_fabricante, prestamo.inventario_modelo].filter(Boolean).join(' ')
+    || prestamo.insumo_nombre || prestamo.nombre || '-';
   const dias = getDiasTranscurridos(prestamo.fecha_hora_prestamo);
   const critico = dias >= config.alerts.diasCriticos ? ' ⚠️' : '';
   const prefix = index !== null ? `${index + 1}. ` : '';
 
-  return `${prefix}${icono} ${prestamo.insumo_nombre || prestamo.nombre}
+  return `${prefix}${icono} ${nombre}
    👤 ${prestamo.usuario_nombre} ${prestamo.usuario_apellido} - ${dias} día(s)${critico}`;
 }
 
@@ -147,14 +153,18 @@ function formatPrestamoLista(prestamo, index = null) {
  * @returns {string}
  */
 function formatPrestamoDetalle(prestamo) {
-  const icono = getIconoTipologia(prestamo.insumo_tipologia || prestamo.tipologia);
+  const cat = prestamo.inventario_categoria || prestamo.insumo_tipologia || prestamo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = prestamo.inventario_descripcion
+    || [prestamo.inventario_fabricante, prestamo.inventario_modelo].filter(Boolean).join(' ')
+    || prestamo.insumo_nombre || prestamo.nombre || '-';
   const dias = getDiasTranscurridos(prestamo.fecha_hora_prestamo);
   const critico = dias >= config.alerts.diasCriticos ? ' ⚠️ CRÍTICO' : '';
 
-  let text = `${icono} *${prestamo.insumo_nombre || prestamo.nombre}*${critico}\n`;
+  let text = `${icono} *${nombre}*${critico}\n`;
   text += `━━━━━━━━━━━━━━━━━━━━\n`;
   text += `👤 Usuario: ${prestamo.usuario_nombre} ${prestamo.usuario_apellido}\n`;
-  text += `🏢 Área: ${prestamo.usuario_area || prestamo.area_equipo}\n`;
+  text += `🏢 Área: ${prestamo.usuario_area || prestamo.area_equipo || '-'}\n`;
   text += `📅 Prestado: ${formatFechaHora(prestamo.fecha_hora_prestamo)}\n`;
   text += `⏱️ Duración: ${dias} día(s)\n`;
 
@@ -217,7 +227,7 @@ function formatResumenDia(metricas) {
 
   // Extraer datos de la estructura anidada de la API
   const prestamos = metricas.prestamos || {};
-  const insumos = metricas.insumos || {};
+  const insumos = metricas.inventario || metricas.insumos || {};
   const usuarios = metricas.usuarios || {};
 
   let text = `📊 *RESUMEN DEL DÍA* - ${fecha}
@@ -241,10 +251,10 @@ function formatResumenDia(metricas) {
 
   text += `
 
-📦 *Insumos*
+📦 *Inventario*
    • Disponibles: ${insumos.disponibles || 0}
-   • En préstamo: ${insumos.en_prestamo || 0}
-   • En mantenimiento: ${insumos.en_mantenimiento || 0}
+   • Asignados: ${insumos.asignados || insumos.en_prestamo || 0}
+   • En reparación: ${insumos.en_reparacion || insumos.en_mantenimiento || 0}
    • Total: ${insumos.total || 0}
 
 👥 *Usuarios*
@@ -262,18 +272,21 @@ function formatResumenDia(metricas) {
  * @returns {string}
  */
 function formatConfirmacionPrestamo(insumo, usuario, responsableIt) {
-  const icono = getIconoTipologia(insumo.tipologia);
+  const cat = insumo.categoria_desc || insumo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = [insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || insumo.nombre || '-';
+  const serie = insumo.serie || insumo.numero_serie;
   const fecha = formatFechaHora(new Date());
 
   return `✅ *Confirmar Préstamo*
 ━━━━━━━━━━━━━━━━━━━━
 
-${icono} *Insumo:* ${insumo.nombre}
-🔢 *Serie:* ${insumo.numero_serie || 'N/A'}
-📁 *Tipo:* ${insumo.tipologia}
+${icono} *Item:* ${nombre}
+🔢 *Serie:* ${serie || 'N/A'}
+📁 *Categoría:* ${cat}
 
 👤 *Usuario:* ${usuario.nombre} ${usuario.apellido}
-🏢 *Área:* ${usuario.area_equipo}
+🏢 *Área:* ${usuario.area_desc || usuario.area_equipo || '-'}
 
 👨‍💼 *Responsable IT:* ${responsableIt.nombre} ${responsableIt.apellido}
 📅 *Fecha:* ${fecha}`;
@@ -285,13 +298,17 @@ ${icono} *Insumo:* ${insumo.nombre}
  * @returns {string}
  */
 function formatConfirmacionDevolucion(prestamo) {
-  const icono = getIconoTipologia(prestamo.insumo_tipologia || prestamo.tipologia);
+  const cat = prestamo.inventario_categoria || prestamo.insumo_tipologia || prestamo.tipologia || '';
+  const icono = getIconoTipologia(cat);
+  const nombre = prestamo.inventario_descripcion
+    || [prestamo.inventario_fabricante, prestamo.inventario_modelo].filter(Boolean).join(' ')
+    || prestamo.insumo_nombre || prestamo.nombre || '-';
   const dias = getDiasTranscurridos(prestamo.fecha_hora_prestamo);
 
   return `📥 *Confirmar Devolución*
 ━━━━━━━━━━━━━━━━━━━━
 
-${icono} *Insumo:* ${prestamo.insumo_nombre || prestamo.nombre}
+${icono} *Item:* ${nombre}
 👤 *Devuelve:* ${prestamo.usuario_nombre} ${prestamo.usuario_apellido}
 ⏱️ *Duración del préstamo:* ${dias} día(s)`;
 }

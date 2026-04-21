@@ -16,7 +16,7 @@ const usuarioValidations = [
     .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/).withMessage('Apellido solo puede contener letras'),
   body('dni').trim().notEmpty().withMessage('DNI requerido')
     .matches(/^\d+$/).withMessage('DNI debe contener solo números'),
-  body('id_area').optional().isInt({ min: 1 }),
+  body('id_area').optional({ nullable: true }).isInt({ min: 1 }),
   body('rol').isIn(['usuario', 'soporte_it']).withMessage('Rol inválido')
 ];
 

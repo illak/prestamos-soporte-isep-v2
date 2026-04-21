@@ -16,7 +16,7 @@ export default function UsuariosPage() {
   const [filters, setFilters] = useState({
     busqueda: '',
     activo: '1',
-    area: '',
+    id_area: '',
     rol: 'todos',
   });
   const [sortBy, setSortBy] = useState('apellido');
@@ -38,7 +38,7 @@ export default function UsuariosPage() {
         limit: pagination.limit,
         busqueda: filters.busqueda,
         activo: filters.activo,
-        area: filters.area,
+        id_area: filters.id_area || undefined,
         rol: filters.rol,
         orderBy: sortBy,
         order: sortOrder,
@@ -180,10 +180,10 @@ export default function UsuariosPage() {
       ),
     },
     {
-      key: 'area_equipo',
+      key: 'area_desc',
       label: 'Área',
-      sortable: true,
-      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
+      sortable: false,
+      render: (value) => <span className="text-gray-900 dark:text-gray-100">{value || '-'}</span>,
     },
     {
       key: 'rol',
@@ -292,13 +292,13 @@ export default function UsuariosPage() {
             <option value="todos">Todos</option>
           </select>
           <select
-            value={filters.area}
-            onChange={(e) => handleFilterChange('area', e.target.value)}
+            value={filters.id_area}
+            onChange={(e) => handleFilterChange('id_area', e.target.value)}
             className="input w-auto min-w-[160px]"
           >
             <option value="">Todas las áreas</option>
             {areas.map((area) => (
-              <option key={area} value={area}>{area}</option>
+              <option key={area.id} value={area.id}>{area.desc}</option>
             ))}
           </select>
           <select

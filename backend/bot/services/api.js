@@ -41,7 +41,7 @@ const insumosApi = {
   async getDisponibles(busqueda = '') {
     const params = new URLSearchParams();
     if (busqueda) params.append('busqueda', busqueda);
-    return fetchApi(`/insumos/disponibles?${params}`);
+    return fetchApi(`/inventario/disponibles?${params}`);
   },
 
   /**
@@ -50,7 +50,7 @@ const insumosApi = {
    * @returns {Promise<object>}
    */
   async getOne(id) {
-    return fetchApi(`/insumos/${id}`);
+    return fetchApi(`/inventario/${id}`);
   },
 
   /**
@@ -60,7 +60,7 @@ const insumosApi = {
    */
   async getAll(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return fetchApi(`/insumos?${queryString}`);
+    return fetchApi(`/inventario?${queryString}`);
   },
 };
 

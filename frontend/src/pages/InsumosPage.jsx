@@ -11,6 +11,7 @@ import InsumoImport from '../components/insumos/InsumoImport';
 import PrestarModal from '../components/insumos/PrestarModal';
 import DevolverModal from '../components/insumos/DevolverModal';
 import HistorialModal from '../components/insumos/HistorialModal';
+import AsignarModal from '../components/insumos/AsignarModal';
 
 export default function InsumosPage() {
   const [insumos, setInsumos] = useState([]);
@@ -18,10 +19,10 @@ export default function InsumosPage() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [filters, setFilters] = useState({
     busqueda: '',
-    tipologia: '',
-    estado: '',
+    id_categoria: '',
+    id_estado: '',
   });
-  const [sortBy, setSortBy] = useState('nombre');
+  const [sortBy, setSortBy] = useState('fecha_creacion');
   const [sortOrder, setSortOrder] = useState('asc');
   const [tipologias, setTipologias] = useState([]);
   const [estados, setEstados] = useState([]);
@@ -33,6 +34,8 @@ export default function InsumosPage() {
   const [prestarInsumo, setPrestarInsumo] = useState(null);
   const [devolverInsumo, setDevolverInsumo] = useState(null);
   const [historialInsumo, setHistorialInsumo] = useState(null);
+  const [asignarInsumo, setAsignarInsumo] = useState(null);
+  const [liberandoId, setLiberandoId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, insumo: null });
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -43,8 +46,8 @@ export default function InsumosPage() {
         page: pagination.page,
         limit: pagination.limit,
         busqueda: filters.busqueda,
-        tipologia: filters.tipologia,
-        estado: filters.estado,
+        id_categoria: filters.id_categoria || undefined,
+        id_estado: filters.id_estado || undefined,
         orderBy: sortBy,
         order: sortOrder,
       });
@@ -152,41 +155,70 @@ export default function InsumosPage() {
     fetchInsumos();
   };
 
+  const handleAsignarSuccess = () => {
+    setAsignarInsumo(null);
+    fetchInsumos();
+  };
+
+  const handleLiberar = async (insumo) => {
+    if (!window.confirm(`¿Liberar la asignación de "${[insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || insumo.serie}"?`)) return;
+    setLiberandoId(insumo.id);
+    try {
+      const result = await insumosApi.liberar(insumo.id, { fecha_devolucion_real: new Date().toISOString() });
+      toast.success(result.message || 'Asignación liberada');
+      fetchInsumos();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLiberandoId(null);
+    }
+  };
+
   const handleExport = () => {
     insumosApi.export(filters.estado);
   };
 
   const columns = [
     {
-      key: 'tipologia',
-      label: 'Tipología',
+      key: 'categoria_desc',
+      label: 'Categoría',
       sortable: true,
       render: (value) => <span className="text-gray-900 dark:text-gray-100">{value}</span>,
     },
     {
-      key: 'nombre',
-      label: 'Nombre',
+      key: 'modelo',
+      label: 'Equipo',
       sortable: true,
       render: (value, row) => (
         <div>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{value}</span>
-          {row.numero_serie && (
-            <span className="block text-xs text-gray-500 dark:text-gray-400">S/N: {row.numero_serie}</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">
+            {[row.fabricante, value].filter(Boolean).join(' ') || '-'}
+          </span>
+          {row.serie && (
+            <span className="block text-xs text-gray-500 dark:text-gray-400">S/N: {row.serie}</span>
+          )}
+          {row.lbl_activo && (
+            <span className="block text-xs text-gray-400 dark:text-gray-500">{row.lbl_activo}</span>
+          )}
+          {row.ubicacion_desc && (
+            <span className="block text-xs text-gray-400 dark:text-gray-500">
+              📍 {row.ubicacion_piso ? `${row.ubicacion_piso} — ` : ''}{row.ubicacion_desc}
+            </span>
           )}
         </div>
       ),
     },
     {
-      key: 'descripcion',
-      label: 'Descripción',
+      key: 'condicion',
+      label: 'Condición',
       render: (value) => (
-        <span className="text-gray-600 dark:text-gray-300 truncate max-w-xs block" title={value}>
-          {value || '-'}
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${value === 'Asignable' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+          {value}
         </span>
       ),
     },
     {
-      key: 'estado',
+      key: 'estado_desc',
       label: 'Estado',
       sortable: true,
       render: (value, row) => (
@@ -208,17 +240,18 @@ export default function InsumosPage() {
       label: 'Acciones',
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          {row.estado === 'Disponible' && (
+          {/* Entregables */}
+          {row.estado_desc === 'Disponible' && row.condicion === 'Entregable' && (
             <button
               onClick={() => setPrestarInsumo(row)}
               className="btn btn-primary text-xs py-1 px-2"
-              title="Prestar este insumo"
+              title="Prestar este item"
             >
               <ArrowUpRight className="w-3.5 h-3.5 mr-1" />
               Prestar
             </button>
           )}
-          {row.estado === 'En préstamo' && (
+          {row.estado_desc === 'Asignado' && row.condicion === 'Entregable' && (
             <button
               onClick={() => setDevolverInsumo(row)}
               className="btn btn-warning text-xs py-1 px-2"
@@ -227,6 +260,35 @@ export default function InsumosPage() {
               <ArrowDownLeft className="w-3.5 h-3.5 mr-1" />
               Devolver
             </button>
+          )}
+          {/* Asignables */}
+          {row.estado_desc === 'Disponible' && row.condicion === 'Asignable' && (
+            <button
+              onClick={() => setAsignarInsumo(row)}
+              className="btn btn-primary text-xs py-1 px-2 bg-purple-600 hover:bg-purple-700 border-purple-600"
+              title="Asignar a un usuario"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5 mr-1" />
+              Asignar
+            </button>
+          )}
+          {row.estado_desc === 'Asignado' && row.condicion === 'Asignable' && (
+            <div className="space-y-1">
+              {row.asignado_nombre && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {row.asignado_nombre} {row.asignado_apellido}
+                </p>
+              )}
+              <button
+                onClick={() => handleLiberar(row)}
+                disabled={liberandoId === row.id}
+                className="btn btn-warning text-xs py-1 px-2"
+                title="Liberar asignación"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5 mr-1" />
+                {liberandoId === row.id ? 'Liberando...' : 'Liberar'}
+              </button>
+            </div>
           )}
           <button
             onClick={() => setHistorialInsumo(row)}
@@ -266,23 +328,23 @@ export default function InsumosPage() {
               className="sm:w-80"
             />
             <select
-              value={filters.tipologia}
-              onChange={(e) => handleFilterChange('tipologia', e.target.value)}
+              value={filters.id_categoria}
+              onChange={(e) => handleFilterChange('id_categoria', e.target.value)}
               className="input sm:w-40"
             >
-              <option value="">Todas las tipologías</option>
-              {tipologias.map((tip) => (
-                <option key={tip} value={tip}>{tip}</option>
+              <option value="">Todas las categorías</option>
+              {tipologias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.desc}</option>
               ))}
             </select>
             <select
-              value={filters.estado}
-              onChange={(e) => handleFilterChange('estado', e.target.value)}
+              value={filters.id_estado}
+              onChange={(e) => handleFilterChange('id_estado', e.target.value)}
               className="input sm:w-44"
             >
               <option value="">Todos los estados</option>
               {estados.map((est) => (
-                <option key={est} value={est}>{est}</option>
+                <option key={est.id} value={est.id}>{est.desc}</option>
               ))}
             </select>
           </div>
@@ -320,23 +382,25 @@ export default function InsumosPage() {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
         {estados.map((estado) => {
-          const count = insumos.filter(i => i.estado === estado).length;
+          const count = insumos.filter(i => i.estado_desc === estado.desc).length;
           const colors = {
-            'Disponible': 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
-            'En préstamo': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
-            'En mantenimiento': 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-            'Dado de baja': 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+            'Disponible':    'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+            'Asignado':      'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+            'En reparación': 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+            'Dañado':        'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+            'Extraviado':    'bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600',
           };
+          const isActive = filters.id_estado === String(estado.id);
           return (
             <div
-              key={estado}
-              className={`border rounded-lg p-3 ${colors[estado] || 'bg-gray-50 dark:bg-gray-800'} cursor-pointer hover:shadow-md transition-shadow`}
-              onClick={() => handleFilterChange('estado', filters.estado === estado ? '' : estado)}
+              key={estado.id}
+              className={`border rounded-lg p-3 ${colors[estado.desc] || 'bg-gray-50 dark:bg-gray-800'} cursor-pointer hover:shadow-md transition-shadow ${isActive ? 'ring-2 ring-blue-500' : ''}`}
+              onClick={() => handleFilterChange('id_estado', isActive ? '' : String(estado.id))}
             >
               <p className="text-2xl font-bold">{count}</p>
-              <p className="text-sm">{estado}</p>
+              <p className="text-sm">{estado.desc}</p>
             </div>
           );
         })}
@@ -403,6 +467,16 @@ export default function InsumosPage() {
         />
       )}
 
+      {/* Asignar Modal */}
+      {asignarInsumo && (
+        <AsignarModal
+          isOpen={!!asignarInsumo}
+          onClose={() => setAsignarInsumo(null)}
+          onSuccess={handleAsignarSuccess}
+          insumo={asignarInsumo}
+        />
+      )}
+
       {/* Historial Modal */}
       {historialInsumo && (
         <HistorialModal
@@ -418,7 +492,7 @@ export default function InsumosPage() {
         onClose={() => setDeleteConfirm({ show: false, insumo: null })}
         onConfirm={confirmDelete}
         title="Eliminar Insumo"
-        message={`¿Está seguro que desea eliminar "${deleteConfirm.insumo?.nombre}"? Esta acción no se puede deshacer.`}
+        message={`¿Está seguro que desea eliminar "${[deleteConfirm.insumo?.fabricante, deleteConfirm.insumo?.modelo].filter(Boolean).join(' ') || deleteConfirm.insumo?.serie || 'este item'}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         type="danger"
         loading={deleteLoading}

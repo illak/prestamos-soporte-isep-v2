@@ -5,6 +5,8 @@ import UsuariosPage from './pages/UsuariosPage';
 import InsumosPage from './pages/InsumosPage';
 import PrestamosPage from './pages/PrestamosPage';
 import TipologiasPage from './pages/TipologiasPage';
+import UbicacionesPage from './pages/UbicacionesPage';
+import AreasPage from './pages/AreasPage';
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
         <Route path="/insumos" element={<InsumosPage />} />
         <Route path="/tipologias" element={<TipologiasPage />} />
         <Route path="/prestamos" element={<PrestamosPage />} />
+        <Route path="/ubicaciones" element={<UbicacionesPage />} />
+        <Route path="/areas" element={<AreasPage />} />
       </Routes>
     </Layout>
   );

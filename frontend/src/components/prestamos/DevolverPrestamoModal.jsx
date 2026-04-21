@@ -44,7 +44,7 @@ export default function DevolverPrestamoModal({ isOpen, onClose, onSuccess, pres
             <Package className="w-5 h-5 text-gray-500 dark:text-gray-400 mt-0.5" />
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Insumo</p>
-              <p className="font-medium text-gray-900 dark:text-white">{prestamo.insumo_descripcion}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{prestamo.inventario_descripcion || prestamo.insumo_descripcion}</p>
             </div>
           </div>
 

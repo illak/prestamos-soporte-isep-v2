@@ -16,7 +16,7 @@ export default function PrestamosPage() {
   const [filters, setFilters] = useState({
     estado: 'todos',
     usuario_id: '',
-    tipologia: '',
+    id_categoria: '',
     usuario_it_id: '',
     fecha_desde: '',
     fecha_hasta: '',
@@ -41,7 +41,7 @@ export default function PrestamosPage() {
       };
 
       if (filters.usuario_id) params.usuario_id = filters.usuario_id;
-      if (filters.tipologia) params.tipologia = filters.tipologia;
+      if (filters.id_categoria) params.id_categoria = filters.id_categoria;
       if (filters.usuario_it_id) params.usuario_it_id = filters.usuario_it_id;
       if (filters.fecha_desde) params.fecha_desde = filters.fecha_desde;
       if (filters.fecha_hasta) params.fecha_hasta = filters.fecha_hasta;
@@ -61,7 +61,7 @@ export default function PrestamosPage() {
   const fetchOptions = async () => {
     try {
       const [tipRes, itRes] = await Promise.all([
-        insumosApi.getTipologias(),
+        insumosApi.getCategorias(),
         usuariosApi.getSoporteIt(),
       ]);
       if (tipRes.success) setTipologias(tipRes.data);
@@ -111,7 +111,7 @@ export default function PrestamosPage() {
     setFilters({
       estado: 'todos',
       usuario_id: '',
-      tipologia: '',
+      id_categoria: '',
       usuario_it_id: '',
       fecha_desde: '',
       fecha_hasta: '',
@@ -264,13 +264,13 @@ export default function PrestamosPage() {
               <option value="Devuelto">Devueltos</option>
             </select>
             <select
-              value={filters.tipologia}
-              onChange={(e) => handleFilterChange('tipologia', e.target.value)}
+              value={filters.id_categoria}
+              onChange={(e) => handleFilterChange('id_categoria', e.target.value)}
               className="input filter-select"
             >
-              <option value="">Todas las tipologías</option>
-              {tipologias.map((tip) => (
-                <option key={tip} value={tip}>{tip}</option>
+              <option value="">Todas las categorías</option>
+              {tipologias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.desc}</option>
               ))}
             </select>
             <button

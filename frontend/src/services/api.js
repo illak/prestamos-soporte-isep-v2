@@ -1,5 +1,13 @@
 const API_BASE = '/api';
 
+// Filtra undefined/null/'' antes de pasarlos a URLSearchParams
+function buildQuery(params) {
+  const clean = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  );
+  return new URLSearchParams(clean).toString();
+}
+
 // Utility function for API calls
 async function fetchApi(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
@@ -30,7 +38,7 @@ async function fetchApi(endpoint, options = {}) {
 // USUARIOS
 export const usuariosApi = {
   getAll: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = buildQuery(params);
     return fetchApi(`/usuarios${queryString ? `?${queryString}` : ''}`);
   },
 
@@ -69,63 +77,76 @@ export const usuariosApi = {
   },
 };
 
-// INSUMOS
+// INVENTARIO (antes: insumos)
 export const insumosApi = {
   getAll: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
-    return fetchApi(`/insumos${queryString ? `?${queryString}` : ''}`);
+    const queryString = buildQuery(params);
+    return fetchApi(`/inventario${queryString ? `?${queryString}` : ''}`);
   },
 
-  getOne: (id) => fetchApi(`/insumos/${id}`),
+  getOne: (id) => fetchApi(`/inventario/${id}`),
 
   getDisponibles: (busqueda = '') => {
-    return fetchApi(`/insumos/disponibles${busqueda ? `?busqueda=${busqueda}` : ''}`);
+    return fetchApi(`/inventario/disponibles${busqueda ? `?busqueda=${busqueda}` : ''}`);
   },
 
-  getTipologias: () => fetchApi('/insumos/tipologias'),
+  // Retorna [{id, desc}] desde /categorias/nombres
+  getTipologias: () => fetchApi('/categorias/nombres'),
+  getCategorias: () => fetchApi('/categorias/nombres'),
 
-  getEstados: () => fetchApi('/insumos/estados'),
+  // Retorna [{id, desc}] desde /inventario/estados
+  getEstados: () => fetchApi('/inventario/estados'),
 
-  getHistorial: (id) => fetchApi(`/insumos/${id}/historial`),
+  getHistorial: (id) => fetchApi(`/inventario/${id}/historial`),
 
-  getPrestamoActivo: (id) => fetchApi(`/insumos/${id}/prestamo-activo`),
+  getPrestamoActivo: (id) => fetchApi(`/inventario/${id}/prestamo-activo`),
 
-  create: (data) => fetchApi('/insumos', {
+  create: (data) => fetchApi('/inventario', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
 
-  update: (id, data) => fetchApi(`/insumos/${id}`, {
+  update: (id, data) => fetchApi(`/inventario/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
 
-  updateEstado: (id, estado) => fetchApi(`/insumos/${id}/estado`, {
+  updateEstado: (id, id_estado) => fetchApi(`/inventario/${id}/estado`, {
     method: 'PUT',
-    body: JSON.stringify({ estado }),
+    body: JSON.stringify({ id_estado }),
   }),
 
-  delete: (id) => fetchApi(`/insumos/${id}`, { method: 'DELETE' }),
+  delete: (id) => fetchApi(`/inventario/${id}`, { method: 'DELETE' }),
+
+  asignar: (id, data) => fetchApi(`/inventario/${id}/asignar`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+
+  liberar: (id, data = {}) => fetchApi(`/inventario/${id}/liberar`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
 
   import: (file, modoConflicto = 'saltar') => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('modoConflicto', modoConflicto);
-    return fetchApi('/insumos/import', {
+    return fetchApi('/inventario/import', {
       method: 'POST',
       body: formData,
     });
   },
 
-  export: (estado = '') => {
-    window.location.href = `${API_BASE}/insumos/export${estado ? `?estado=${estado}` : ''}`;
+  export: () => {
+    window.location.href = `${API_BASE}/inventario/export`;
   },
 };
 
 // PRESTAMOS
 export const prestamosApi = {
   getAll: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = buildQuery(params);
     return fetchApi(`/prestamos${queryString ? `?${queryString}` : ''}`);
   },
 
@@ -133,7 +154,8 @@ export const prestamosApi = {
 
   create: (data) => fetchApi('/prestamos', {
     method: 'POST',
-    body: JSON.stringify(data),
+    // acepta inventario_id (nuevo) o insumo_id (compat)
+    body: JSON.stringify({ ...data, inventario_id: data.inventario_id ?? data.insumo_id }),
   }),
 
   update: (id, data) => fetchApi(`/prestamos/${id}`, {
@@ -147,7 +169,7 @@ export const prestamosApi = {
   }),
 
   export: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = buildQuery(params);
     window.location.href = `${API_BASE}/prestamos/export${queryString ? `?${queryString}` : ''}`;
   },
 };
@@ -163,34 +185,55 @@ export const dashboardApi = {
   getGraficos: () => fetchApi('/dashboard/graficos'),
 };
 
-// TIPOLOGIAS
+// CATEGORIAS (antes: tipologias)
 export const tipologiasApi = {
   getAll: (params = {}) => {
-    const queryString = new URLSearchParams(params).toString();
-    return fetchApi(`/tipologias${queryString ? `?${queryString}` : ''}`);
+    const queryString = buildQuery(params);
+    return fetchApi(`/categorias${queryString ? `?${queryString}` : ''}`);
   },
 
-  getNombres: () => fetchApi('/tipologias/nombres'),
+  getNombres: () => fetchApi('/categorias/nombres'),
 
-  getOne: (id) => fetchApi(`/tipologias/${id}`),
+  getOne: (id) => fetchApi(`/categorias/${id}`),
 
-  getInsumos: (id, estado = '') => {
-    return fetchApi(`/tipologias/${id}/insumos${estado ? `?estado=${estado}` : ''}`);
+  getInsumos: (id) => fetchApi(`/categorias/${id}/inventario`),
+
+  // body usa {desc} en vez de {nombre}
+  create: (data) => fetchApi('/categorias', {
+    method: 'POST',
+    body: JSON.stringify({ desc: data.nombre ?? data.desc, ...data }),
+  }),
+
+  update: (id, data) => fetchApi(`/categorias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ desc: data.nombre ?? data.desc, ...data }),
+  }),
+
+  toggle: (id) => fetchApi(`/categorias/${id}/toggle`, { method: 'PUT' }),
+
+  delete: (id) => fetchApi(`/categorias/${id}`, { method: 'DELETE' }),
+};
+
+export const categoriasApi = tipologiasApi;
+
+// UBICACIONES
+export const ubicacionesApi = {
+  getAll: (params = {}) => {
+    const queryString = buildQuery(params);
+    return fetchApi(`/ubicaciones${queryString ? `?${queryString}` : ''}`);
   },
 
-  create: (data) => fetchApi('/tipologias', {
+  create: (data) => fetchApi('/ubicaciones', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
 
-  update: (id, data) => fetchApi(`/tipologias/${id}`, {
+  update: (id, data) => fetchApi(`/ubicaciones/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
 
-  toggle: (id) => fetchApi(`/tipologias/${id}/toggle`, { method: 'PUT' }),
-
-  delete: (id) => fetchApi(`/tipologias/${id}`, { method: 'DELETE' }),
+  delete: (id) => fetchApi(`/ubicaciones/${id}`, { method: 'DELETE' }),
 };
 
 export default {

@@ -4,10 +4,7 @@ import Modal from '../common/Modal';
 import { tipologiasApi } from '../../services/api';
 
 export default function TipologiaForm({ isOpen, onClose, onSuccess, tipologia }) {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-  });
+  const [formData, setFormData] = useState({ nombre: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -16,15 +13,9 @@ export default function TipologiaForm({ isOpen, onClose, onSuccess, tipologia })
   useEffect(() => {
     if (isOpen) {
       if (tipologia) {
-        setFormData({
-          nombre: tipologia.nombre || '',
-          descripcion: tipologia.descripcion || '',
-        });
+        setFormData({ nombre: tipologia.desc || tipologia.nombre || '' });
       } else {
-        setFormData({
-          nombre: '',
-          descripcion: '',
-        });
+        setFormData({ nombre: '' });
       }
       setError(null);
     }
@@ -92,28 +83,11 @@ export default function TipologiaForm({ isOpen, onClose, onSuccess, tipologia })
           />
         </div>
 
-        {/* Descripcion */}
-        <div>
-          <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Descripcion
-          </label>
-          <textarea
-            id="descripcion"
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            rows={3}
-            placeholder="Descripcion opcional de la tipologia..."
-            className="input w-full resize-none"
-          />
-        </div>
-
         {/* Info card for editing */}
-        {isEditing && tipologia.cantidad_insumos > 0 && (
+        {isEditing && tipologia.cantidad_items > 0 && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-700 dark:text-blue-400">
-              Esta tipologia tiene <strong>{tipologia.cantidad_insumos}</strong> insumo(s) asociado(s).
-              Al cambiar el nombre, se actualizaran automaticamente.
+              Esta categoría tiene <strong>{tipologia.cantidad_items}</strong> item(s) asociado(s).
             </p>
           </div>
         )}
@@ -130,7 +104,7 @@ export default function TipologiaForm({ isOpen, onClose, onSuccess, tipologia })
           </button>
           <button
             type="submit"
-            disabled={loading || !formData.nombre.trim()}
+            disabled={loading || !formData.nombre?.trim()}
             className="btn btn-primary"
           >
             {loading ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Tipologia'}

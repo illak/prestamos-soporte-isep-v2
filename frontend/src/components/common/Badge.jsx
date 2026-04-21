@@ -23,13 +23,18 @@ export default function Badge({ children, variant = 'default', className = '' })
   );
 }
 
-// Badge para estado de insumo
+// Badge para estado de inventario
 export function EstadoInsumoBadge({ estado }) {
   const config = {
-    'Disponible': { variant: 'disponible', icon: '✓' },
-    'En préstamo': { variant: 'en-prestamo', icon: '📤' },
+    'Disponible':    { variant: 'disponible', icon: '✓' },
+    'Asignado':      { variant: 'en-prestamo', icon: '📤' },
+    'En reparación': { variant: 'en-mantenimiento', icon: '🔧' },
+    'Dañado':        { variant: 'dado-de-baja', icon: '✖️' },
+    'Extraviado':    { variant: 'dado-de-baja', icon: '🔍' },
+    // compat con nombres viejos (por si quedan en algún lado)
+    'En préstamo':    { variant: 'en-prestamo', icon: '📤' },
     'En mantenimiento': { variant: 'en-mantenimiento', icon: '🔧' },
-    'Dado de baja': { variant: 'dado-de-baja', icon: '✖️' },
+    'Dado de baja':   { variant: 'dado-de-baja', icon: '✖️' },
   };
 
   const { variant, icon } = config[estado] || { variant: 'default', icon: '' };

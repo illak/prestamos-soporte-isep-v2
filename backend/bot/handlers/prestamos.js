@@ -274,7 +274,7 @@ async function confirmarPrestamo(bot, chatId) {
 
   try {
     const response = await prestamosApi.crear({
-      insumo_id: session.insumo.id,
+      inventario_id: session.insumo.id,
       usuario_id: session.usuario.id,
       usuario_it_id: session.responsableIt.id,
       fecha_hora_prestamo: new Date().toISOString(),
@@ -289,7 +289,7 @@ async function confirmarPrestamo(bot, chatId) {
 
     await bot.sendMessage(
       chatId,
-      `✅ *Préstamo Registrado Correctamente*\n\n📋 ID: #${prestamo.id}\n\nEl insumo ha sido marcado como "En préstamo".`,
+      `✅ *Préstamo Registrado Correctamente*\n\n📋 ID: #${prestamo.id}\n\nEl item ha sido marcado como "Asignado".`,
       {
         parse_mode: 'Markdown',
         reply_markup: menus.postPrestamo(),

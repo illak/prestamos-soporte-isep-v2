@@ -105,9 +105,9 @@ export default function TipologiasPage() {
 
   // Stats
   const totalTipologias = tipologias.length;
-  const totalInsumos = tipologias.reduce((sum, t) => sum + (t.cantidad_insumos || 0), 0);
+  const totalInsumos = tipologias.reduce((sum, t) => sum + (t.cantidad_items || 0), 0);
   const totalDisponibles = tipologias.reduce((sum, t) => sum + (t.cantidad_disponibles || 0), 0);
-  const totalPrestados = tipologias.reduce((sum, t) => sum + (t.cantidad_prestados || 0), 0);
+  const totalPrestados = tipologias.reduce((sum, t) => sum + (t.cantidad_asignados || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -220,13 +220,10 @@ export default function TipologiasPage() {
             <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Nombre
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Descripcion
+                  Categoría
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Insumos
+                  Items
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Disponibles
@@ -267,15 +264,12 @@ export default function TipologiasPage() {
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
                           <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <span className="font-medium text-gray-900 dark:text-white">{tipologia.nombre}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{tipologia.desc}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300 text-sm">
-                      {tipologia.descripcion || '-'}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                        {tipologia.cantidad_insumos || 0}
+                        {tipologia.cantidad_items || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -285,7 +279,7 @@ export default function TipologiasPage() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
-                        {tipologia.cantidad_prestados || 0}
+                        {tipologia.cantidad_asignados || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -319,7 +313,7 @@ export default function TipologiasPage() {
                         >
                           {tipologia.activo ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                         </button>
-                        {tipologia.cantidad_insumos === 0 && (
+                        {(tipologia.cantidad_items || 0) === 0 && (
                           <button
                             onClick={() => handleDeleteClick(tipologia)}
                             className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
@@ -352,7 +346,7 @@ export default function TipologiasPage() {
         onClose={() => setDeleteModal({ isOpen: false, tipologia: null, loading: false })}
         onConfirm={handleDeleteConfirm}
         title="Eliminar Tipologia"
-        message={`¿Estas seguro de eliminar la tipologia "${deleteModal.tipologia?.nombre}"? Esta accion no se puede deshacer.`}
+        message={`¿Estas seguro de eliminar la categoría "${deleteModal.tipologia?.desc}"? Esta accion no se puede deshacer.`}
         confirmText="Eliminar"
         type="danger"
         loading={deleteModal.loading}
@@ -366,8 +360,8 @@ export default function TipologiasPage() {
         title={toggleModal.tipologia?.activo ? 'Desactivar Tipologia' : 'Activar Tipologia'}
         message={
           toggleModal.tipologia?.activo
-            ? `¿Estas seguro de desactivar la tipologia "${toggleModal.tipologia?.nombre}"? No aparecera en los selectores de nuevos insumos.`
-            : `¿Estas seguro de activar la tipologia "${toggleModal.tipologia?.nombre}"?`
+            ? `¿Estas seguro de desactivar la categoría "${toggleModal.tipologia?.desc}"? No aparecera en los selectores de nuevos items.`
+            : `¿Estas seguro de activar la categoría "${toggleModal.tipologia?.desc}"?`
         }
         confirmText={toggleModal.tipologia?.activo ? 'Desactivar' : 'Activar'}
         type="warning"

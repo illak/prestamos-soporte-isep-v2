@@ -26,7 +26,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      insumo_id: '',
+      inventario_id: '',
       usuario_id: '',
       usuario_it_id: '',
       observaciones_prestamo: '',
@@ -100,9 +100,10 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
     if (!busquedaInsumo) return true;
     const search = busquedaInsumo.toLowerCase();
     return (
-      i.nombre.toLowerCase().includes(search) ||
-      i.tipologia.toLowerCase().includes(search) ||
-      (i.numero_serie && i.numero_serie.toLowerCase().includes(search))
+      (i.modelo || '').toLowerCase().includes(search) ||
+      (i.fabricante || '').toLowerCase().includes(search) ||
+      (i.categoria_desc || '').toLowerCase().includes(search) ||
+      (i.serie && i.serie.toLowerCase().includes(search))
     );
   });
 
@@ -117,7 +118,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
         toast.success('Préstamo actualizado correctamente');
       } else {
         await prestamosApi.create({
-          insumo_id: parseInt(data.insumo_id),
+          inventario_id: parseInt(data.inventario_id),
           usuario_id: parseInt(data.usuario_id),
           usuario_it_id: parseInt(data.usuario_it_id),
           fecha_hora_prestamo: fechaPrestamo.toISOString(),
@@ -151,19 +152,19 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
               className="input mb-2"
             />
             <select
-              {...register('insumo_id', { required: 'Seleccione un insumo' })}
+              {...register('inventario_id', { required: 'Seleccione un item' })}
               className="input"
               disabled={loadingOptions}
             >
-              <option value="">Seleccionar insumo disponible...</option>
+              <option value="">Seleccionar item disponible...</option>
               {filteredInsumos.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.tipologia} - {i.nombre} {i.numero_serie ? `(S/N: ${i.numero_serie})` : ''}
+                  {i.categoria_desc} - {[i.fabricante, i.modelo].filter(Boolean).join(' ') || '-'} {i.serie ? `(S/N: ${i.serie})` : ''}
                 </option>
               ))}
             </select>
-            {errors.insumo_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.insumo_id.message}</p>
+            {errors.inventario_id && (
+              <p className="text-red-500 text-sm mt-1">{errors.inventario_id.message}</p>
             )}
             {filteredInsumos.length === 0 && !loadingOptions && (
               <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-1">No hay insumos disponibles</p>
@@ -175,7 +176,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
         {isEditing && (
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">Insumo</p>
-            <p className="font-medium text-gray-900 dark:text-white">{prestamo.insumo_descripcion}</p>
+            <p className="font-medium text-gray-900 dark:text-white">{prestamo.inventario_descripcion || prestamo.insumo_descripcion}</p>
           </div>
         )}
 
@@ -210,7 +211,7 @@ export default function PrestamoForm({ isOpen, onClose, onSuccess, prestamo }) {
               </option>
               {usuarios.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.apellido}, {u.nombre} - DNI: {u.dni} ({u.area_equipo})
+                  {u.apellido}, {u.nombre} - DNI: {u.dni} ({u.area_desc || u.area_equipo || '-'})
                 </option>
               ))}
             </select>

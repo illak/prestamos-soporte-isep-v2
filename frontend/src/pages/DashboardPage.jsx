@@ -74,10 +74,10 @@ export default function DashboardPage() {
     );
   }
 
-  // Preparar datos para gráfica de insumos prestados por tipo (actualmente)
-  const insumosPorTipo = graficos?.distribucion_insumos_por_tipo || [];
-  const pieDataTipo = insumosPorTipo.map((item, index) => ({
-    name: item.tipologia,
+  // Preparar datos para gráfica de items asignados por categoría (actualmente)
+  const itemsPorCategoria = graficos?.distribucion_por_categoria || [];
+  const pieDataTipo = itemsPorCategoria.map((item, index) => ({
+    name: item.categoria,
     value: item.cantidad,
     color: TIPOLOGIA_COLORS[index % TIPOLOGIA_COLORS.length]
   }));
@@ -169,9 +169,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                {metricas?.insumos.disponibles || 0}
+                {metricas?.inventario?.disponibles || 0}
               </p>
-              <p className="text-sm text-blue-600 dark:text-blue-500 font-medium">Insumos disponibles</p>
+              <p className="text-sm text-blue-600 dark:text-blue-500 font-medium">Items disponibles</p>
             </div>
             <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-full">
               <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -184,10 +184,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cantidad de préstamos por día (por tipo) */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Préstamos por día (por tipología)</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Préstamos por día (por categoría)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={graficos?.prestamos_por_dia_tipo || []}>
+              <BarChart data={graficos?.prestamos_por_dia_categoria || []}>
                 <CartesianGrid strokeDasharray="3 3" className="dark:opacity-30" />
                 <XAxis
                   dataKey="fecha"
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Legend />
-                {graficos?.tipologias_unicas?.map((tipo, index) => (
+                {graficos?.categorias_unicas?.map((tipo, index) => (
                   <Bar
                     key={tipo}
                     dataKey={tipo}
@@ -260,10 +260,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cantidad de insumos prestados por tipo (actualmente) */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Insumos en préstamo por tipología</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Items asignados por categoría</h3>
           {pieDataTipo.length === 0 ? (
             <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-              No hay insumos en préstamo actualmente
+              No hay items asignados actualmente
             </div>
           ) : (
             <div className="h-64">
@@ -290,29 +290,31 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="text-center mt-2">
-            <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{metricas?.insumos.en_prestamo || 0}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total en préstamo</p>
+            <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{metricas?.inventario?.asignados || 0}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total asignados</p>
           </div>
         </div>
 
         {/* Insumos más prestados */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Insumos más prestados (histórico)</h3>
-          {graficos?.insumos_mas_prestados?.length === 0 ? (
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Items más prestados (histórico)</h3>
+          {graficos?.items_mas_prestados?.length === 0 ? (
             <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
               No hay datos de préstamos
             </div>
           ) : (
             <div className="space-y-3">
-              {graficos?.insumos_mas_prestados?.map((i, idx) => (
+              {graficos?.items_mas_prestados?.map((i, idx) => (
                 <div key={i.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className="flex items-center min-w-0">
                     <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-full text-sm font-bold mr-3">
                       {idx + 1}
                     </span>
                     <div className="min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">{i.nombre}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{i.tipologia}</p>
+                      <p className="font-medium text-gray-900 dark:text-white truncate">
+                        {[i.fabricante, i.modelo].filter(Boolean).join(' ') || i.serie || '-'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{i.categoria}</p>
                     </div>
                   </div>
                   <span className="badge bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 ml-2">
@@ -344,7 +346,7 @@ export default function DashboardPage() {
                     </span>
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900 dark:text-white truncate">{u.nombre_completo}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{u.area_equipo}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{u.area || '-'}</p>
                     </div>
                   </div>
                   <div className="text-right ml-2">
@@ -377,7 +379,7 @@ export default function DashboardPage() {
                 <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 dark:text-white truncate">{p.usuario_nombre_completo}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{p.insumo_descripcion}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{p.inventario_descripcion || p.insumo_descripcion}</p>
                   </div>
                   <div className="ml-2">
                     <EstadoPrestamoBadge diasTranscurridos={p.dias_transcurridos} animate={p.dias_transcurridos >= 4} />

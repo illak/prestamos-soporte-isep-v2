@@ -147,6 +147,19 @@ function insertDefaults(database) {
     categoriasDefault.forEach(d => insertCategoria.run(d));
     console.log('Categorías predeterminadas insertadas');
   }
+
+  const countUbicaciones = database.prepare('SELECT COUNT(*) as count FROM ubicaciones').get();
+  if (countUbicaciones.count === 0) {
+    const ubicacionesDefault = [
+      { desc: 'Depósito', piso: null },
+      { desc: 'Sala de Reuniones', piso: null },
+      { desc: 'Secretaría', piso: null },
+      { desc: 'Dirección', piso: null },
+    ];
+    const insertUb = database.prepare('INSERT INTO ubicaciones (desc, piso) VALUES (?, ?)');
+    ubicacionesDefault.forEach(u => insertUb.run(u.desc, u.piso));
+    console.log('Ubicaciones predeterminadas insertadas');
+  }
 }
 
 function runMigration(database) {
@@ -345,6 +358,40 @@ function runMigration(database) {
   database.pragma('foreign_keys = ON');
 }
 
+function fixAreaEquipoConstraint(database) {
+  // Si area_equipo existe con NOT NULL, reconstruir tabla para hacerlo nullable
+  const cols = database.pragma('table_info(usuarios)');
+  const colAreaEquipo = cols.find(c => c.name === 'area_equipo');
+  if (!colAreaEquipo || colAreaEquipo.notnull === 0) return; // ya está bien
+
+  console.log('Corrigiendo constraint NOT NULL de area_equipo...');
+  database.pragma('foreign_keys = OFF');
+  database.exec(`
+    CREATE TABLE usuarios_fixed (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      mail TEXT UNIQUE NOT NULL,
+      nombre TEXT NOT NULL,
+      apellido TEXT NOT NULL,
+      dni TEXT UNIQUE NOT NULL,
+      area_equipo TEXT,
+      id_area INTEGER REFERENCES areas(id),
+      rol TEXT NOT NULL CHECK(rol IN ('usuario', 'soporte_it')) DEFAULT 'usuario',
+      activo BOOLEAN DEFAULT 1,
+      fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    INSERT INTO usuarios_fixed SELECT * FROM usuarios;
+    DROP TABLE usuarios;
+    ALTER TABLE usuarios_fixed RENAME TO usuarios;
+    CREATE INDEX IF NOT EXISTS idx_usuarios_mail ON usuarios(mail);
+    CREATE INDEX IF NOT EXISTS idx_usuarios_dni ON usuarios(dni);
+    CREATE INDEX IF NOT EXISTS idx_usuarios_activo ON usuarios(activo);
+    CREATE INDEX IF NOT EXISTS idx_usuarios_rol ON usuarios(rol);
+  `);
+  database.pragma('foreign_keys = ON');
+  console.log('Constraint area_equipo corregido.');
+}
+
 function initialize() {
   const database = getDb();
 
@@ -352,6 +399,7 @@ function initialize() {
   const hasInsumos = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='insumos'").get();
 
   if (hasInventario) {
+    fixAreaEquipoConstraint(database);
     insertDefaults(database);
     console.log('Base de datos inicializada (esquema nuevo)');
   } else if (hasInsumos) {

@@ -74,9 +74,11 @@ function botonesConfirmacion(confirmarCallback, cancelarCallback = 'cancelar') {
  */
 function listaInsumos(insumos, callbackPrefix = 'insumo') {
   const keyboard = insumos.slice(0, 10).map((insumo, index) => {
-    const icono = getIconoTipologia(insumo.tipologia);
-    const serie = insumo.numero_serie ? ` - ${insumo.numero_serie}` : '';
-    const text = `${icono} ${insumo.nombre}${serie}`.substring(0, 60);
+    const cat = insumo.categoria_desc || insumo.tipologia || '';
+    const icono = getIconoTipologia(cat);
+    const nombre = [insumo.fabricante, insumo.modelo].filter(Boolean).join(' ') || insumo.nombre || '-';
+    const serie = (insumo.serie || insumo.numero_serie) ? ` - ${insumo.serie || insumo.numero_serie}` : '';
+    const text = `${icono} ${nombre}${serie}`.substring(0, 60);
     return [{ text, callback_data: `${callbackPrefix}_${insumo.id}` }];
   });
 
@@ -93,7 +95,7 @@ function listaInsumos(insumos, callbackPrefix = 'insumo') {
  */
 function listaUsuarios(usuarios, callbackPrefix = 'usuario') {
   const keyboard = usuarios.slice(0, 10).map((usuario, index) => {
-    const text = `👤 ${usuario.apellido}, ${usuario.nombre} (${usuario.area_equipo})`.substring(0, 60);
+    const text = `👤 ${usuario.apellido}, ${usuario.nombre} (${usuario.area_desc || usuario.area_equipo || '-'})`.substring(0, 60);
     return [{ text, callback_data: `${callbackPrefix}_${usuario.id}` }];
   });
 
@@ -126,10 +128,14 @@ function listaUsuariosIt(usuarios, callbackPrefix = 'it') {
  */
 function listaPrestamosDevolucion(prestamos) {
   const keyboard = prestamos.slice(0, 10).map((prestamo) => {
-    const icono = getIconoTipologia(prestamo.insumo_tipologia || prestamo.tipologia);
+    const cat = prestamo.inventario_categoria || prestamo.insumo_tipologia || prestamo.tipologia || '';
+    const icono = getIconoTipologia(cat);
+    const nombre = prestamo.inventario_descripcion
+      || [prestamo.inventario_fabricante, prestamo.inventario_modelo].filter(Boolean).join(' ')
+      || prestamo.insumo_nombre || '-';
     const dias = getDiasTranscurridos(prestamo.fecha_hora_prestamo);
     const critico = dias >= config.alerts.diasCriticos ? ' ⚠️' : '';
-    const text = `${icono} ${prestamo.insumo_nombre} - ${prestamo.usuario_nombre} (${dias}d)${critico}`.substring(0, 60);
+    const text = `${icono} ${nombre} - ${prestamo.usuario_nombre} (${dias}d)${critico}`.substring(0, 60);
     return [{ text, callback_data: `devolver_${prestamo.id}` }];
   });
 
@@ -190,10 +196,15 @@ function listaActivosConAcciones(prestamos) {
   const keyboard = [];
 
   prestamos.slice(0, 8).forEach((prestamo) => {
-    const icono = getIconoTipologia(prestamo.insumo_tipologia || prestamo.tipologia);
+    const cat = prestamo.inventario_categoria || prestamo.insumo_tipologia || prestamo.tipologia || '';
+    const icono = getIconoTipologia(cat);
     const dias = getDiasTranscurridos(prestamo.fecha_hora_prestamo);
     const critico = dias >= config.alerts.diasCriticos ? ' ⚠️' : '';
-    const nombre = (prestamo.insumo_nombre || prestamo.nombre || '').substring(0, 25);
+    const nombre = (
+      prestamo.inventario_descripcion ||
+      [prestamo.inventario_fabricante, prestamo.inventario_modelo].filter(Boolean).join(' ') ||
+      prestamo.insumo_nombre || prestamo.nombre || '-'
+    ).substring(0, 25);
     const usuario = (prestamo.usuario_apellido || '').substring(0, 10);
 
     keyboard.push([
