@@ -366,6 +366,27 @@ function fixAreaEquipoConstraint(database) {
 
   console.log('Corrigiendo constraint NOT NULL de area_equipo...');
   database.pragma('foreign_keys = OFF');
+
+  // Normalizar roles inválidos antes de migrar (el CHECK nuevo sólo acepta 'usuario'/'soporte_it')
+  const rolesInvalidos = database.prepare(
+    "SELECT DISTINCT rol FROM usuarios WHERE rol IS NULL OR rol NOT IN ('usuario', 'soporte_it')"
+  ).all();
+  if (rolesInvalidos.length > 0) {
+    console.log('Roles inválidos detectados, normalizando:', rolesInvalidos.map(r => r.rol));
+    // Mapeo heurístico: cualquier variante de soporte/admin/it → 'soporte_it', el resto → 'usuario'
+    database.exec(`
+      UPDATE usuarios
+      SET rol = CASE
+        WHEN LOWER(COALESCE(rol, '')) LIKE '%soporte%'
+          OR LOWER(COALESCE(rol, '')) LIKE '%admin%'
+          OR LOWER(COALESCE(rol, '')) = 'it'
+        THEN 'soporte_it'
+        ELSE 'usuario'
+      END
+      WHERE rol IS NULL OR rol NOT IN ('usuario', 'soporte_it')
+    `);
+  }
+
   // Limpiar tabla temporal si quedó de un intento fallido anterior
   database.exec('DROP TABLE IF EXISTS usuarios_fixed');
   database.exec(`
