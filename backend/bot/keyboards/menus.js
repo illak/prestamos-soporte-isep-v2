@@ -16,7 +16,12 @@ function menuPrincipal() {
         { text: '📥 Devolución', callback_data: 'menu_devolver' },
       ],
       [
+        { text: '🏢 Asignar Insumo', callback_data: 'menu_asignar' },
+        { text: '🔓 Liberar Asignación', callback_data: 'menu_liberar' },
+      ],
+      [
         { text: '📋 Préstamos Activos', callback_data: 'menu_activos' },
+        { text: '🏢 Asignaciones', callback_data: 'menu_asignaciones' },
       ],
       [
         { text: '🔍 Buscar Insumo', callback_data: 'menu_buscar_insumo' },
@@ -221,6 +226,78 @@ function listaActivosConAcciones(prestamos) {
   return { inline_keyboard: keyboard };
 }
 
+/**
+ * Teclado con lista de ubicaciones
+ */
+function listaUbicaciones(ubicaciones, callbackPrefix = 'ubi') {
+  const keyboard = ubicaciones.slice(0, 20).map((u) => {
+    const piso = u.piso ? ` (${u.piso})` : '';
+    const text = `📍 ${u.desc}${piso}`.substring(0, 60);
+    return [{ text, callback_data: `${callbackPrefix}_${u.id}` }];
+  });
+  keyboard.push([{ text: '❌ Cancelar', callback_data: 'cancelar' }]);
+  return { inline_keyboard: keyboard };
+}
+
+/**
+ * Teclado con lista de items asignables disponibles
+ */
+function listaInventarioAsignable(items, callbackPrefix = 'sel_asig_item') {
+  const keyboard = items.slice(0, 10).map((item) => {
+    const cat = item.categoria_desc || '';
+    const icono = getIconoTipologia(cat);
+    const nombre = [item.fabricante, item.modelo].filter(Boolean).join(' ') || '-';
+    const serie = item.serie ? ` - ${item.serie}` : '';
+    const text = `${icono} ${nombre}${serie}`.substring(0, 60);
+    return [{ text, callback_data: `${callbackPrefix}_${item.id}` }];
+  });
+  keyboard.push([{ text: '❌ Cancelar', callback_data: 'cancelar' }]);
+  return { inline_keyboard: keyboard };
+}
+
+/**
+ * Teclado con lista de items asignados (para liberar)
+ */
+function listaAsignacionesLiberar(items, callbackPrefix = 'sel_liberar') {
+  const keyboard = items.slice(0, 10).map((item) => {
+    const cat = item.categoria_desc || '';
+    const icono = getIconoTipologia(cat);
+    const nombre = [item.fabricante, item.modelo].filter(Boolean).join(' ') || '-';
+    const ubi = item.ubicacion_desc ? ` @ ${item.ubicacion_desc}` : '';
+    const text = `${icono} ${nombre}${ubi}`.substring(0, 60);
+    return [{ text, callback_data: `${callbackPrefix}_${item.id}` }];
+  });
+  keyboard.push([{ text: '❌ Cancelar', callback_data: 'cancelar' }]);
+  return { inline_keyboard: keyboard };
+}
+
+/**
+ * Teclado con botón "Omitir persona" + cancelar (para asignaciones)
+ */
+function botonOmitirPersona() {
+  return {
+    inline_keyboard: [
+      [{ text: '⏭️ Omitir (sin persona)', callback_data: 'omitir_persona' }],
+      [{ text: '❌ Cancelar', callback_data: 'cancelar' }],
+    ],
+  };
+}
+
+/**
+ * Teclado después de asignar/liberar
+ */
+function postAsignacion() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '🏢 Otra Asignación', callback_data: 'menu_asignar' },
+        { text: '📋 Ver Asignaciones', callback_data: 'menu_asignaciones' },
+      ],
+      [{ text: '🏠 Menú Principal', callback_data: 'menu_principal' }],
+    ],
+  };
+}
+
 module.exports = {
   menuPrincipal,
   botonMenuPrincipal,
@@ -234,4 +311,9 @@ module.exports = {
   postDevolucion,
   botonOmitir,
   listaActivosConAcciones,
+  listaUbicaciones,
+  listaInventarioAsignable,
+  listaAsignacionesLiberar,
+  botonOmitirPersona,
+  postAsignacion,
 };

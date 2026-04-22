@@ -4,29 +4,46 @@ import { toast } from 'react-toastify';
 import { ubicacionesApi } from '../services/api';
 import Modal from '../components/common/Modal';
 
+const PISOS = ['PB', '1°', '2°', '3°', '4°', '5°', '6°', '7°', 'Otro'];
+
+function parsePisoInicial(piso) {
+  if (!piso) return { seleccion: '', otro: '' };
+  if (PISOS.slice(0, -1).includes(piso)) return { seleccion: piso, otro: '' };
+  return { seleccion: 'Otro', otro: piso };
+}
+
 function UbicacionForm({ isOpen, onClose, onSuccess, ubicacion }) {
   const isEditing = !!ubicacion;
-  const [formData, setFormData] = useState({ desc: '', piso: '' });
+  const [desc, setDesc] = useState('');
+  const [pisoSel, setPisoSel] = useState('');
+  const [pisoOtro, setPisoOtro] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({ desc: ubicacion?.desc || '', piso: ubicacion?.piso || '' });
+      setDesc(ubicacion?.desc || '');
+      const { seleccion, otro } = parsePisoInicial(ubicacion?.piso);
+      setPisoSel(seleccion);
+      setPisoOtro(otro);
       setError(null);
     }
   }, [isOpen, ubicacion]);
 
+  const pisoFinal = pisoSel === 'Otro' ? pisoOtro.trim() : pisoSel;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.desc.trim()) { setError('La descripción es requerida'); return; }
+    if (!desc.trim()) { setError('La descripción es requerida'); return; }
+    if (pisoSel === 'Otro' && !pisoOtro.trim()) { setError('Especificá el piso'); return; }
     setLoading(true);
     setError(null);
     try {
+      const data = { desc: desc.trim(), piso: pisoFinal || null };
       if (isEditing) {
-        await ubicacionesApi.update(ubicacion.id, { desc: formData.desc.trim(), piso: formData.piso.trim() || null });
+        await ubicacionesApi.update(ubicacion.id, data);
       } else {
-        await ubicacionesApi.create({ desc: formData.desc.trim(), piso: formData.piso.trim() || null });
+        await ubicacionesApi.create(data);
       }
       onSuccess();
     } catch (err) {
@@ -48,8 +65,8 @@ function UbicacionForm({ isOpen, onClose, onSuccess, ubicacion }) {
           <label className="label">Descripción *</label>
           <input
             type="text"
-            value={formData.desc}
-            onChange={(e) => setFormData(p => ({ ...p, desc: e.target.value }))}
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
             className="input"
             placeholder="Ej: Sala de Reuniones A, Depósito Central..."
             required
@@ -57,14 +74,30 @@ function UbicacionForm({ isOpen, onClose, onSuccess, ubicacion }) {
         </div>
         <div>
           <label className="label">Piso / Planta (opcional)</label>
-          <input
-            type="text"
-            value={formData.piso}
-            onChange={(e) => setFormData(p => ({ ...p, piso: e.target.value }))}
+          <select
+            value={pisoSel}
+            onChange={(e) => { setPisoSel(e.target.value); setPisoOtro(''); }}
             className="input"
-            placeholder="Ej: PB, 1° Piso, 2° Piso..."
-          />
+          >
+            <option value="">— Sin especificar —</option>
+            {PISOS.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
         </div>
+        {pisoSel === 'Otro' && (
+          <div>
+            <label className="label">Especificá el piso *</label>
+            <input
+              type="text"
+              value={pisoOtro}
+              onChange={(e) => setPisoOtro(e.target.value)}
+              className="input"
+              placeholder="Ej: Subsuelo, Terraza, Anexo..."
+              autoFocus
+            />
+          </div>
+        )}
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button type="button" onClick={onClose} className="btn btn-outline" disabled={loading}>Cancelar</button>
           <button type="submit" className="btn btn-primary" disabled={loading}>

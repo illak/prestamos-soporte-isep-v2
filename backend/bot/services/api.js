@@ -62,6 +62,56 @@ const insumosApi = {
     const queryString = new URLSearchParams(params).toString();
     return fetchApi(`/inventario?${queryString}`);
   },
+
+  /**
+   * Obtener items asignables disponibles (condicion=Asignable, estado=Disponible)
+   */
+  async getAsignablesDisponibles(busqueda = '') {
+    const params = new URLSearchParams({ condicion: 'Asignable', estado_desc: 'Disponible', limit: '50' });
+    if (busqueda) params.append('busqueda', busqueda);
+    return fetchApi(`/inventario?${params}`);
+  },
+
+  /**
+   * Obtener items asignados actualmente (condicion=Asignable, estado=Asignado)
+   */
+  async getAsignados(busqueda = '') {
+    const params = new URLSearchParams({ condicion: 'Asignable', estado_desc: 'Asignado', limit: '50' });
+    if (busqueda) params.append('busqueda', busqueda);
+    return fetchApi(`/inventario?${params}`);
+  },
+
+  /**
+   * Asignar un item a una ubicación (y opcionalmente a una persona)
+   */
+  async asignar(id, data) {
+    return fetchApi(`/inventario/${id}/asignar`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Liberar un item asignado
+   */
+  async liberar(id, data = {}) {
+    return fetchApi(`/inventario/${id}/liberar`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+/**
+ * API de Ubicaciones
+ */
+const ubicacionesApi = {
+  async getAll() {
+    return fetchApi('/ubicaciones?activo=1');
+  },
+  async getOne(id) {
+    return fetchApi(`/ubicaciones/${id}`);
+  },
 };
 
 /**
@@ -191,4 +241,5 @@ module.exports = {
   usuariosApi,
   prestamosApi,
   dashboardApi,
+  ubicacionesApi,
 };

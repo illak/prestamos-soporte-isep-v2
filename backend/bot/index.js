@@ -13,6 +13,7 @@ const commands = require('./handlers/commands');
 const prestamos = require('./handlers/prestamos');
 const devoluciones = require('./handlers/devoluciones');
 const consultas = require('./handlers/consultas');
+const asignaciones = require('./handlers/asignaciones');
 
 /**
  * Verifica si un chat es un grupo
@@ -124,6 +125,12 @@ function createBot() {
         return;
       }
 
+      const handledByAsignaciones = await asignaciones.handleMessage(bot, msg);
+      if (handledByAsignaciones) {
+        console.log('✅ Manejado por asignaciones');
+        return;
+      }
+
       const handledByDevoluciones = await devoluciones.handleMessage(bot, msg);
       if (handledByDevoluciones) {
         console.log('✅ Manejado por devoluciones');
@@ -181,6 +188,7 @@ function createBot() {
         prestamos.clearSession(chatId);
         devoluciones.clearDevolucionSession(chatId);
         consultas.clearConsultaSession(chatId);
+        asignaciones.clearSession(chatId);
         return;
       }
 
@@ -194,6 +202,7 @@ function createBot() {
         prestamos.clearSession(chatId);
         devoluciones.clearDevolucionSession(chatId);
         consultas.clearConsultaSession(chatId);
+        asignaciones.clearSession(chatId);
         return;
       }
 
@@ -234,9 +243,31 @@ function createBot() {
         return;
       }
 
+      if (data === 'menu_asignar') {
+        await bot.answerCallbackQuery(query.id);
+        await asignaciones.iniciarAsignacion(bot, chatId, isGroup);
+        return;
+      }
+
+      if (data === 'menu_liberar') {
+        await bot.answerCallbackQuery(query.id);
+        await asignaciones.iniciarLiberacion(bot, chatId);
+        return;
+      }
+
+      if (data === 'menu_asignaciones') {
+        await bot.answerCallbackQuery(query.id);
+        await asignaciones.listarAsignaciones(bot, chatId);
+        return;
+      }
+
       // Delegar a handlers específicos
       if (await prestamos.handleCallback(bot, query)) {
         console.log('✅ Callback manejado por prestamos');
+        return;
+      }
+      if (await asignaciones.handleCallback(bot, query)) {
+        console.log('✅ Callback manejado por asignaciones');
         return;
       }
       if (await devoluciones.handleCallback(bot, query)) {
