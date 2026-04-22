@@ -30,6 +30,9 @@ function menuPrincipal() {
       [
         { text: '📊 Resumen del Día', callback_data: 'menu_resumen' },
       ],
+      [
+        { text: '➕ Registrar Insumo', callback_data: 'menu_registrar_insumo' },
+      ],
     ],
   };
 }
@@ -272,6 +275,19 @@ function listaAsignacionesLiberar(items, callbackPrefix = 'sel_liberar') {
 }
 
 /**
+ * Teclado con lista de categorías para registro de insumo
+ */
+function listaCategorias(categorias, callbackPrefix = 'reg_cat') {
+  const keyboard = categorias.slice(0, 15).map((cat) => {
+    const icono = getIconoTipologia(cat.desc || '');
+    const text = `${icono} ${cat.desc}`.substring(0, 60);
+    return [{ text, callback_data: `${callbackPrefix}_${cat.id}` }];
+  });
+  keyboard.push([{ text: '❌ Cancelar', callback_data: 'cancelar' }]);
+  return { inline_keyboard: keyboard };
+}
+
+/**
  * Teclado con botón "Omitir persona" + cancelar (para asignaciones)
  */
 function botonOmitirPersona() {
@@ -316,4 +332,5 @@ module.exports = {
   listaAsignacionesLiberar,
   botonOmitirPersona,
   postAsignacion,
+  listaCategorias,
 };

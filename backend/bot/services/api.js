@@ -100,6 +100,16 @@ const insumosApi = {
       body: JSON.stringify(data),
     });
   },
+
+  /**
+   * Crear un nuevo insumo en el inventario
+   */
+  async crear(data) {
+    return fetchApi('/inventario', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 /**
@@ -235,6 +245,15 @@ const dashboardApi = {
   },
 };
 
+/**
+ * API de Categorías
+ */
+const categoriasApi = {
+  async getAll() {
+    return fetchApi('/categorias?activo=1');
+  },
+};
+
 module.exports = {
   fetchApi,
   insumosApi,
@@ -242,4 +261,5 @@ module.exports = {
   prestamosApi,
   dashboardApi,
   ubicacionesApi,
+  categoriasApi,
 };

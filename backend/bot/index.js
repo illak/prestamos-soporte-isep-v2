@@ -14,6 +14,7 @@ const prestamos = require('./handlers/prestamos');
 const devoluciones = require('./handlers/devoluciones');
 const consultas = require('./handlers/consultas');
 const asignaciones = require('./handlers/asignaciones');
+const registroInsumo = require('./handlers/registroInsumo');
 
 /**
  * Verifica si un chat es un grupo
@@ -143,6 +144,12 @@ function createBot() {
         return;
       }
 
+      const handledByRegistroInsumo = await registroInsumo.handleMessage(bot, msg);
+      if (handledByRegistroInsumo) {
+        console.log('✅ Manejado por registroInsumo');
+        return;
+      }
+
       // Si no hay flujo activo y es un mensaje privado, mostrar sugerencia
       // En grupos no mostramos esto para evitar spam
       if (!isGroup) {
@@ -189,6 +196,7 @@ function createBot() {
         devoluciones.clearDevolucionSession(chatId);
         consultas.clearConsultaSession(chatId);
         asignaciones.clearSession(chatId);
+        registroInsumo.clearSession(chatId);
         return;
       }
 
@@ -203,6 +211,7 @@ function createBot() {
         devoluciones.clearDevolucionSession(chatId);
         consultas.clearConsultaSession(chatId);
         asignaciones.clearSession(chatId);
+        registroInsumo.clearSession(chatId);
         return;
       }
 
@@ -261,6 +270,12 @@ function createBot() {
         return;
       }
 
+      if (data === 'menu_registrar_insumo') {
+        await bot.answerCallbackQuery(query.id);
+        await registroInsumo.iniciarRegistro(bot, chatId);
+        return;
+      }
+
       // Delegar a handlers específicos
       if (await prestamos.handleCallback(bot, query)) {
         console.log('✅ Callback manejado por prestamos');
@@ -276,6 +291,10 @@ function createBot() {
       }
       if (await consultas.handleCallback(bot, query)) {
         console.log('✅ Callback manejado por consultas');
+        return;
+      }
+      if (await registroInsumo.handleCallback(bot, query)) {
+        console.log('✅ Callback manejado por registroInsumo');
         return;
       }
 
